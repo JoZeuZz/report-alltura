@@ -89,7 +89,11 @@ const ScaffoldsPage = () => {
     if (!selectedProjectId) return;
     setExporting(true);
     try {
-      const response = await api.get(`/projects/${selectedProjectId}/export/pdf`, {
+      // Pasar los filtros como query params
+      const params = new URLSearchParams({
+        ...filters
+      }).toString();
+      const response = await api.get(`/projects/${selectedProjectId}/export/pdf?${params}`, {
         responseType: 'blob', // Importante para recibir el archivo
       });
       // Crear un enlace temporal para descargar el archivo

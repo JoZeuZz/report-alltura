@@ -32,7 +32,7 @@ CREATE TABLE projects (
 CREATE TABLE scaffolds (
     id SERIAL PRIMARY KEY,
     project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-    user_id INTEGER NOT NULL REFERENCES users(id),
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     height DECIMAL NOT NULL,
     width DECIMAL NOT NULL,
     depth DECIMAL NOT NULL,

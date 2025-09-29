@@ -106,4 +106,29 @@ router.put('/:id/disassemble', upload.single('disassembly_image'), async (req, r
   }
 });
 
+/**
+ * @route   GET /api/scaffolds/my-history
+ * @desc    Obtener el historial de andamios del técnico logueado
+ * @access  Private (Technician)
+ */
+router.get('/my-history', async (req, res) => {
+  const userId = req.user.id;
+  try {
+    const query = `
+      SELECT 
+        s.*, 
+        p.name as project_name 
+      FROM scaffolds s
+      JOIN projects p ON s.project_id = p.id
+      WHERE s.user_id = $1 
+      ORDER BY s.assembly_created_at DESC
+    `;
+    const { rows } = await db.query(query, [userId]);
+    res.json(rows);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+});
+
 module.exports = router;

@@ -13,6 +13,7 @@ import ProjectScaffoldsPage from './pages/technician/ProjectScaffoldsPage';
 import NewScaffoldPage from './pages/technician/NewScaffoldPage';
 import DisassembleScaffoldPage from './pages/technician/DisassembleScaffoldPage';
 import ProfilePage from './pages/ProfilePage';
+import HistoryPage from './pages/technician/HistoryPage';
 
 const AdminRoute = ({ children }) => {
   const { user } = useAuth();
@@ -53,6 +54,7 @@ function App() {
             <Route path="dashboard" element={<TechDashboard />} />
             <Route path="project/:projectId" element={<ProjectScaffoldsPage />} />
             <Route path="project/:projectId/new-scaffold" element={<NewScaffoldPage />} />
+            <Route path="history" element={<HistoryPage />} />
             <Route path="profile" element={<ProfilePage />} />
             <Route path="scaffold/:scaffoldId/disassemble" element={<DisassembleScaffoldPage />} />
             <Route index element={<Navigate to="dashboard" />} />

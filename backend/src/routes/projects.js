@@ -134,15 +134,37 @@ router.get('/:id/export/pdf', async (req, res) => {
       return res.status(404).json({ message: 'Project not found' });
     }
 
+    const { status, startDate, endDate } = req.query;
+
     // Obtener los andamios con el nombre del usuario
-    const scaffoldsQuery = `
+    let scaffoldsQuery = `
       SELECT s.*, u.name as user_name 
       FROM scaffolds s 
       JOIN users u ON s.user_id = u.id 
-      WHERE s.project_id = $1 ORDER BY s.assembly_created_at DESC`;
-    const { rows: scaffolds } = await db.query(scaffoldsQuery, [req.params.id]);
+      WHERE s.project_id = $1`;
     
-    generateScaffoldsPDF(project, scaffolds, res);
+    const queryParams = [req.params.id];
+    let paramIndex = 2;
+
+    if (status && status !== 'all') {
+      scaffoldsQuery += ` AND s.status = $${paramIndex++}`;
+      queryParams.push(status);
+    }
+    if (startDate) {
+      scaffoldsQuery += ` AND s.assembly_created_at >= $${paramIndex++}`;
+      queryParams.push(startDate);
+    }
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setDate(end.getDate() + 1);
+      scaffoldsQuery += ` AND s.assembly_created_at < $${paramIndex++}`;
+      queryParams.push(end.toISOString().split('T')[0]);
+    }
+
+    scaffoldsQuery += ` ORDER BY s.assembly_created_at DESC`;
+    const { rows: scaffolds } = await db.query(scaffoldsQuery, queryParams);
+    
+    generateScaffoldsPDF(project, scaffolds, res, { status, startDate, endDate });
 
   } catch (err) {
     console.error(err);

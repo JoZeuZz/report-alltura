@@ -22,7 +22,7 @@ const AppLayout = () => {
   const techLinks = (
     <>
       <NavLink to="/tech/dashboard" className={({ isActive }) => isActive ? activeLinkClass : linkClass}>Mis Proyectos</NavLink>
-      {/* Add more technician links here if needed, e.g., a profile page */}
+      <NavLink to="/tech/history" className={({ isActive }) => isActive ? activeLinkClass : linkClass}>Historial</NavLink>
     </>
   );
 

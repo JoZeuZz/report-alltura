@@ -1,41 +1,52 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 
 const ProfilePage = () => {
   const { user, login } = useAuth(); // Usamos 'login' para actualizar el contexto con el nuevo token
-  const [name, setName] = useState(user.name);
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  
+  // Sugerencia: Agrupar el estado del formulario en un solo objeto.
+  const [formData, setFormData] = useState({
+    name: user.name || '',
+    password: '',
+    confirmPassword: '',
+  });
+
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  // Sugerencia: Usar useCallback para el manejador de cambios y evitar re-creaciones innecesarias.
+  const handleChange = useCallback((e) => {
+    const { id, value } = e.target;
+    setFormData(prev => ({ ...prev, [id]: value }));
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
 
-    if (password && password !== confirmPassword) {
+    if (formData.password && formData.password !== formData.confirmPassword) {
       setError('Las contraseñas no coinciden.');
       return;
     }
 
     setSubmitting(true);
 
-    const updateData = { name };
-    if (password) {
-      updateData.password = password;
+    // Sugerencia: Construir el payload de forma más limpia.
+    const updateData = { name: formData.name };
+    if (formData.password) {
+      updateData.password = formData.password;
     }
 
     try {
       const response = await api.put('/users/me', updateData);
       // El backend devuelve un nuevo token con la información actualizada.
       // Lo usamos para actualizar el contexto de autenticación.
-      login(response.data.token);
+      if (response.data.token) login(response.data.token);
       setSuccess('¡Perfil actualizado con éxito!');
-      setPassword('');
-      setConfirmPassword('');
+      setFormData(prev => ({ ...prev, password: '', confirmPassword: '' }));
     } catch (err) {
       setError('Error al actualizar el perfil. Por favor, intente de nuevo.');
       console.error(err);
@@ -70,8 +81,8 @@ const ProfilePage = () => {
             <input
               type="text"
               id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              value={formData.name}
+              onChange={handleChange}
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-blue focus:border-primary-blue"
               required
             />
@@ -84,8 +95,8 @@ const ProfilePage = () => {
             <input
               type="password"
               id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              value={formData.password}
+              onChange={handleChange}
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-blue focus:border-primary-blue"
             />
           </div>
@@ -97,8 +108,8 @@ const ProfilePage = () => {
             <input
               type="password"
               id="confirmPassword"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
+              value={formData.confirmPassword}
+              onChange={handleChange}
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-blue focus:border-primary-blue"
             />
           </div>

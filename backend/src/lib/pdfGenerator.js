@@ -1,6 +1,6 @@
 const PDFDocument = require('pdfkit');
 
-function generateScaffoldsPDF(project, scaffolds, res) {
+function generateScaffoldsPDF(project, scaffolds, res, filters = {}) {
   const doc = new PDFDocument({ margin: 50 });
 
   // Configurar la respuesta para que el navegador descargue el archivo
@@ -24,6 +24,17 @@ function generateScaffoldsPDF(project, scaffolds, res) {
   doc.text(`Nombre: ${project.name}`);
   doc.text(`Cliente: ${project.client_name}`);
   doc.text(`Fecha de Generación: ${new Date().toLocaleDateString()}`);
+
+  // Añadir información de filtros si existen
+  const appliedFilters = Object.entries(filters).filter(([, value]) => value && value !== 'all');
+  if (appliedFilters.length > 0) {
+    doc.moveDown(0.5);
+    doc.fontSize(10).font('Helvetica-Bold').text('Filtros Aplicados:');
+    doc.fontSize(10).font('Helvetica');
+    if (filters.status && filters.status !== 'all') doc.text(`- Estado: ${filters.status === 'assembled' ? 'Armado' : 'Desarmado'}`);
+    if (filters.startDate) doc.text(`- Desde: ${new Date(filters.startDate).toLocaleDateString()}`);
+    if (filters.endDate) doc.text(`- Hasta: ${new Date(filters.endDate).toLocaleDateString()}`);
+  }
 
   doc.moveDown(2);
 
