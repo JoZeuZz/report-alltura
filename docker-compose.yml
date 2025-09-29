@@ -1,0 +1,35 @@
+# Versión de la sintaxis de Docker Compose
+version: '3.8'
+
+# Definición de los servicios (contenedores) que se ejecutarán
+services:
+  # Nombre del servicio de la base de datos
+  postgres_db:
+    # Imagen de Docker que se utilizará. Usamos la versión 15 de PostgreSQL.
+    image: postgres:15-alpine
+
+    # Nombre del contenedor para identificarlo fácilmente
+    container_name: alltura_postgres
+
+    # Variables de entorno para configurar la base de datos
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+
+    # Mapeo de puertos: conecta el puerto 5432 del contenedor
+    # al puerto 5432 de tu máquina local.
+    ports:
+      - "5432:5432"
+
+    # Volúmenes para persistencia de datos:
+    # Guarda los datos de la base de datos en una carpeta local './postgres-data'.
+    # Esto evita que pierdas los datos si el contenedor se detiene o se elimina.
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+      # Monta el script de inicialización para que se ejecute al crear la BD por primera vez
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+
+    # Política de reinicio:
+    # Siempre reinicia el contenedor si se detiene, a menos que lo detengas manualmente.
+    restart: unless-stopped

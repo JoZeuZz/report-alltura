@@ -1,0 +1,106 @@
+import React, { useState, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import api from '../../services/api';
+
+const DisassembleScaffoldPage = () => {
+  const { projectId, scaffoldId } = useParams();
+  const navigate = useNavigate();
+  const [notes, setNotes] = useState('');
+  const [image, setImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const fileInputRef = useRef(null);
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!image) {
+      setError('Por favor, adjunte una foto de prueba del desmontaje.');
+      return;
+    }
+
+    if (!window.confirm('¿Está seguro de que desea marcar este andamio como desarmado?')) {
+      return;
+    }
+
+    setSubmitting(true);
+    setError('');
+
+    const formData = new FormData();
+    formData.append('disassembly_notes', notes);
+    formData.append('disassembly_image', image);
+
+    try {
+      await api.put(`/scaffolds/${scaffoldId}/disassemble`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      navigate(`/tech/project/${projectId}`);
+    } catch (err) {
+      setError('Error al enviar el reporte de desmontaje. Intente de nuevo.');
+      console.error(err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div>
+      <button onClick={() => navigate(-1)} className="mb-4 text-primary-blue hover:underline">&larr; Volver al Proyecto</button>
+      <h1 className="text-3xl font-bold text-dark-blue mb-6">Marcar Andamio como Desarmado</h1>
+
+      <form onSubmit={handleSubmit} className="space-y-6 bg-white p-8 rounded-lg shadow-md">
+        {/* Image Upload */}
+        <div>
+          <label className="block text-sm font-bold text-gray-700 mb-2">Foto de Prueba del Desmontaje</label>
+          <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+            <div className="space-y-1 text-center">
+              {imagePreview ? (
+                <img src={imagePreview} alt="Vista previa" className="mx-auto h-48 w-auto rounded-md" />
+              ) : (
+                <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true"><path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              )}
+              <div className="flex text-sm text-gray-600 justify-center">
+                <label htmlFor="file-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-primary-blue hover:text-blue-700 focus-within:outline-none">
+                  <span>{image ? 'Cambiar foto' : 'Adjuntar una foto'}</span>
+                  <input id="file-upload" name="file-upload" type="file" className="sr-only" accept="image/*" capture="environment" onChange={handleImageChange} ref={fileInputRef} required />
+                </label>
+              </div>
+              <p className="text-xs text-gray-500">Foto del área despejada</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Notes */}
+        <div>
+          <label htmlFor="notes" className="block text-sm font-bold text-gray-700">Notas de Desmontaje (Opcional)</label>
+          <textarea id="notes" rows="3" value={notes} onChange={(e) => setNotes(e.target.value)} className="form-input"></textarea>
+        </div>
+
+        {error && <p className="text-red-500 text-sm">{error}</p>}
+
+        {/* Submit */}
+        <div className="pt-5">
+          <button type="submit" disabled={submitting} className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-lg font-medium text-white bg-primary-blue hover:bg-blue-700 focus:outline-none disabled:bg-gray-400">
+            {submitting ? 'Confirmando...' : 'Confirmar Desmontaje'}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+};
+
+export default DisassembleScaffoldPage;
