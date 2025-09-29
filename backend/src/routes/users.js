@@ -11,7 +11,6 @@ const { uploadFile } = require('../lib/googleCloud');
 // Multer config for in-memory storage
 const multerStorage = multer.memoryStorage();
 const upload = multer({ storage: multerStorage });
-};
 
 // ===== Self-service routes for logged-in users =====
 
