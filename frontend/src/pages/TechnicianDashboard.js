@@ -1,35 +1,17 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import toast from 'react-hot-toast';
-import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import useFetch from '../hooks/useFetch';
 import Spinner from '../components/Spinner';
 
 const TechnicianDashboard = () => {
-  const [projects, setProjects] = useState([]);
-  const [loading, setLoading] = useState(true);
   const { user } = useAuth();
-
-  useEffect(() => {
-    const fetchProjects = async () => {
-      setLoading(true);
-      try {
-        const { data } = await api.get('/projects');
-        const activeProjects = data.filter(p => p.status === 'active');
-        setProjects(activeProjects);
-      } catch (error) {
-        console.error('Failed to fetch projects', error);
-        toast.error('Error al cargar los proyectos asignados.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (user) {
-      fetchProjects();
-    }
-  }, [user]);
+  const { data: allProjects, loading } = useFetch('/projects');
+  
+  const projects = useMemo(() => {
+    return allProjects?.filter(p => p.status === 'active') || [];
+  }, [allProjects]);
 
   return (
     <div>
@@ -53,7 +35,7 @@ const TechnicianDashboard = () => {
                   Ver Reportes
                 </Link>
                 <Link 
-                  to={`/tech/project/${project.id}/report`} 
+                  to={`/tech/project/${project.id}/new-scaffold`} 
                   className="px-4 py-2 bg-primary-blue text-white text-sm font-medium rounded-md hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-blue"
                 >
                   Nuevo Reporte

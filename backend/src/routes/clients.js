@@ -2,15 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Client = require('../models/client');
 const auth = require('../middleware/auth');
-
-// Middleware to check for admin role
-const isAdmin = (req, res, next) => {
-  if (req.user && req.user.role === 'admin') {
-    next();
-  } else {
-    res.status(403).json({ message: 'Forbidden: Admins only' });
-  }
-};
+const { isAdmin } = require('../middleware/roles');
 
 // Apply auth and isAdmin middleware to all client routes
 router.use(auth, isAdmin);

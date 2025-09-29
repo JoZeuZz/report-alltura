@@ -2,19 +2,11 @@
 const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/auth');
+const { isAdmin } = require('../middleware/roles');
 const db = require('../db');
 
 // All dashboard routes are protected
 router.use(auth);
-
-// Middleware to check for admin role
-const isAdmin = (req, res, next) => {
-  if (req.user && req.user.role === 'admin') {
-    next();
-  } else {
-    res.status(403).json({ message: 'Forbidden: Admins only' });
-  }
-};
 
 router.use(isAdmin);
 

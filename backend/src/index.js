@@ -3,9 +3,10 @@ const cors = require('cors');
 const authRoutes = require('./routes/auth');
 const clientRoutes = require('./routes/clients');
 const projectRoutes = require('./routes/projects'); 
-const scaffoldRoutes = require('./routes/scaffolds'); // Renombrado de reports a scaffolds
+const scaffoldRoutes = require('./routes/scaffolds');
 const userRoutes = require('./routes/users');
-const dashboardRoutes = require('./routes/dashboard'); // Import dashboard routes
+const dashboardRoutes = require('./routes/dashboard');
+const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
 
@@ -23,7 +24,10 @@ app.use('/api/clients', clientRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/scaffolds', scaffoldRoutes); // Ruta actualizada
 app.use('/api/users', userRoutes);
-app.use('/api/dashboard', dashboardRoutes); // Use dashboard routes
+app.use('/api/dashboard', dashboardRoutes);
+
+// Error handler middleware (debe ir después de todas las rutas)
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 

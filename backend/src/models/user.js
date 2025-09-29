@@ -2,13 +2,13 @@ const db = require('../db');
 const bcrypt = require('bcrypt');
 
 const User = {
-  async create({ first_name, last_name, email, password, role }) {
+  async create({ name, email, password, role }) {
     const salt = await bcrypt.genSalt(10);
     const password_hash = await bcrypt.hash(password, salt);
     
     const { rows } = await db.query(
-      'INSERT INTO users (first_name, last_name, email, password_hash, role) VALUES ($1, $2, $3, $4, $5) RETURNING id, first_name, last_name, email, role, created_at',
-      [first_name, last_name, email, password_hash, role]
+      'INSERT INTO users (name, email, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role, created_at',
+      [name, email, password_hash, role]
     );
     return rows[0];
   },
@@ -24,7 +24,7 @@ const User = {
   },
 
   async getAll(filters = {}) {
-    let query = 'SELECT id, first_name, last_name, email, role FROM users';
+    let query = 'SELECT id, name, email, role FROM users';
     const queryParams = [];
     
     if (filters.role) {
@@ -32,13 +32,13 @@ const User = {
       queryParams.push(filters.role);
     }
     
-    query += ' ORDER BY last_name, first_name';
+    query += ' ORDER BY name';
     
     const { rows } = await db.query(query, queryParams);
     return rows;
   },
 
-  async update(id, { first_name, last_name, email, role, password, birth_date, rut, position, profile_picture_url }) {
+  async update(id, { name, email, role, password, birth_date, rut, position, profile_picture_url }) {
     const fields = [];
     const values = [];
     let query = 'UPDATE users SET ';
@@ -50,8 +50,7 @@ const User = {
       }
     };
 
-    addField('first_name', first_name);
-    addField('last_name', last_name);
+    addField('name', name);
     addField('email', email);
     addField('role', role);
     addField('birth_date', birth_date);

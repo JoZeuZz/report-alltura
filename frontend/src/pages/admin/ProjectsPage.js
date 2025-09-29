@@ -3,6 +3,7 @@ import api from '../../services/api';
 import ProjectForm from '../../components/ProjectForm';
 import Modal from '../../components/Modal';
 import AssignTechniciansForm from '../../components/AssignTechniciansForm';
+import ConfirmationModal from '../../components/ConfirmationModal';
 
 const ProjectsPage = () => {
   const [projects, setProjects] = useState([]);
@@ -82,16 +83,25 @@ const ProjectsPage = () => {
     }
   };
 
-  const handleDelete = async (projectId) => {
-    if (window.confirm('¿Está seguro de que desea eliminar este proyecto?')) {
-      try {
-        await api.delete(`/projects/${projectId}`);
-        fetchData();
-      } catch (err) {
-        setError('Error al eliminar el proyecto.');
-        console.error(err);
-      }
+  const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState(null);
+
+  const handleDeleteClick = (projectId) => {
+    setProjectToDelete(projectId);
+    setIsConfirmDeleteOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!projectToDelete) return;
+    
+    try {
+      await api.delete(`/projects/${projectToDelete}`);
+      fetchData();
+    } catch (err) {
+      setError('Error al eliminar el proyecto.');
+      console.error(err);
     }
+    setProjectToDelete(null);
   };
 
   if (loading) {
@@ -141,7 +151,7 @@ const ProjectsPage = () => {
                     Asignar
                   </button>
                   <button onClick={() => handleOpenModal(project)} className="text-indigo-600 hover:text-indigo-900 mr-4">Editar</button>
-                  <button onClick={() => handleDelete(project.id)} className="text-red-600 hover:text-red-900">Eliminar</button>
+                  <button onClick={() => handleDeleteClick(project.id)} className="text-red-600 hover:text-red-900">Eliminar</button>
                 </td>
               </tr>
             ))}
@@ -167,6 +177,14 @@ const ProjectsPage = () => {
           onCancel={handleCloseAssignModal}
         />
       </Modal>
+
+      <ConfirmationModal
+        isOpen={isConfirmDeleteOpen}
+        onClose={() => setIsConfirmDeleteOpen(false)}
+        onConfirm={handleDelete}
+        title="Eliminar Proyecto"
+        message="¿Está seguro de que desea eliminar este proyecto? Esta acción no se puede deshacer."
+      />
     </div>
   );
 };

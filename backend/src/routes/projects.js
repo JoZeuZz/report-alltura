@@ -3,17 +3,9 @@ const router = express.Router();
 const Project = require('../models/project');
 const db = require('../db');
 const auth = require('../middleware/auth');
+const { isAdmin } = require('../middleware/roles');
 const { generateScaffoldsPDF } = require('../lib/pdfGenerator');
 const { generateReportExcel } = require('../lib/excelGenerator');
-
-// Middleware to check for admin role
-const isAdmin = (req, res, next) => {
-  if (req.user && req.user.role === 'admin') {
-    next();
-  } else {
-    res.status(403).json({ message: 'Forbidden: Admins only' });
-  }
-};
 
 // GET all projects (for admins) or assigned projects (for technicians)
 router.get('/', auth, async (req, res) => {
@@ -65,22 +57,7 @@ router.post('/:id/users', async (req, res) => {
     const projectId = req.params.id;
     const { userIds } = req.body; // Espera un array de IDs de usuario [1, 2, 3]
 
-    const client = await db.pool.connect();
-    try {
-      await client.query('BEGIN');
-      // Primero, eliminar todas las asignaciones existentes para este proyecto
-      await client.query('DELETE FROM project_users WHERE project_id = $1', [projectId]);
-      // Luego, insertar las nuevas asignaciones
-      for (const userId of userIds) {
-        await client.query('INSERT INTO project_users (project_id, user_id) VALUES ($1, $2)', [projectId, userId]);
-      }
-      await client.query('COMMIT');
-    } catch (e) {
-      await client.query('ROLLBACK');
-      throw e;
-    } finally {
-      client.release();
-    }
+    await Project.assignUsers(projectId, userIds);
     res.status(200).json({ message: 'Users assigned successfully' });
   } catch (err) {
     console.error(err);

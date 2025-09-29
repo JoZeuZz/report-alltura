@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const User = require('../models/user');
 const auth = require('../middleware/auth');
+const { isAdmin } = require('../middleware/roles');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const { uploadFile } = require('../lib/googleCloud');
@@ -10,14 +11,6 @@ const { uploadFile } = require('../lib/googleCloud');
 // Multer config for in-memory storage
 const multerStorage = multer.memoryStorage();
 const upload = multer({ storage: multerStorage });
-
-// Middleware to check for admin role
-const isAdmin = (req, res, next) => {
-  if (req.user && req.user.role === 'admin') {
-    next();
-  } else {
-    res.status(403).json({ message: 'Forbidden: Admins only' });
-  }
 };
 
 // ===== Self-service routes for logged-in users =====

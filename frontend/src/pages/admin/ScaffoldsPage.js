@@ -1,10 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import api from '../../services/api';
 import Modal from '../../components/Modal';
+import ProjectSelector from '../../components/ProjectSelector';
+import ScaffoldFilters from '../../components/ScaffoldFilters';
+import ScaffoldGrid from '../../components/ScaffoldGrid';
+import useFetch from '../../hooks/useFetch';
 
 const ScaffoldsPage = () => {
   const [projects, setProjects] = useState([]);
-  const [allScaffolds, setAllScaffolds] = useState([]); // Almacena todos los andamios del proyecto
+  const [allScaffolds, setAllScaffolds] = useState([]);
   const [scaffolds, setScaffolds] = useState([]);
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [loading, setLoading] = useState(false);
@@ -144,47 +148,21 @@ const ScaffoldsPage = () => {
 
       {/* Controls */}
       <div className="bg-white p-4 rounded-lg shadow-md mb-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
-          {/* Project Selector */}
-          <div className="lg:col-span-2">
-          <label htmlFor="project-select" className="block text-sm font-medium text-neutral-gray">
-            Seleccionar Proyecto
-          </label>
-          <select
-            id="project-select"
-            value={selectedProjectId}
-            onChange={(e) => {
-              setSelectedProjectId(e.target.value);
-              // Reset filters when changing project
-              setFilters({ status: 'all', startDate: '', endDate: '' });
-            }}
-            className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-blue focus:border-primary-blue sm:text-sm rounded-md"
-          >
-            <option value="" disabled>-- Elija un proyecto --</option>
-            {projects.map((p) => (
-              <option key={p.id} value={p.id}>{p.name}</option>
-            ))}
-          </select>
-          </div>
-          {/* Status Filter */}
-          <div>
-            <label htmlFor="status-filter" className="block text-sm font-medium text-neutral-gray">Estado</label>
-            <select id="status-filter" name="status" value={filters.status} onChange={(e) => setFilters(f => ({...f, status: e.target.value}))} className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-blue focus:border-primary-blue sm:text-sm rounded-md">
-              <option value="all">Todos</option>
-              <option value="assembled">Armado</option>
-              <option value="disassembled">Desarmado</option>
-            </select>
-          </div>
-          {/* Date Filters */}
-          <div>
-            <label htmlFor="start-date" className="block text-sm font-medium text-neutral-gray">Desde</label>
-            <input type="date" id="start-date" name="startDate" value={filters.startDate} onChange={(e) => setFilters(f => ({...f, startDate: e.target.value}))} className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-blue focus:border-primary-blue sm:text-sm rounded-md" />
-          </div>
-          <div>
-            <label htmlFor="end-date" className="block text-sm font-medium text-neutral-gray">Hasta</label>
-            <input type="date" id="end-date" name="endDate" value={filters.endDate} onChange={(e) => setFilters(f => ({...f, endDate: e.target.value}))} className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-blue focus:border-primary-blue sm:text-sm rounded-md" />
-          </div>
-        </div>
+        {/* Project Selector Component */}
+        <ProjectSelector 
+          projects={projects}
+          selectedProjectId={selectedProjectId}
+          onProjectSelect={(value) => {
+            setSelectedProjectId(value);
+            setFilters({ status: 'all', startDate: '', endDate: '' });
+          }}
+        />
+        
+        {/* Filters Component */}
+        <ScaffoldFilters 
+          filters={filters}
+          onFilterChange={setFilters}
+        />
         {/* Export Buttons */}
         <div className="flex gap-2 mt-4 pt-4 border-t border-gray-200">
           <button
