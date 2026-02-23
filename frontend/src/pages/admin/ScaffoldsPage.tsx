@@ -5,6 +5,7 @@ import Modal from '../../components/Modal';
 import ProjectSelector from '../../components/ProjectSelector';
 import ScaffoldFilters from '../../components/ScaffoldFilters';
 import ScaffoldGrid from '../../components/ScaffoldGrid';
+import ScaffoldTableView from '../../components/ScaffoldTableView';
 import LoadingOverlay from '../../components/LoadingOverlay';
 import ScaffoldDetailsModal from '../../components/ScaffoldDetailsModal';
 import { Project, Scaffold } from '../../types/api';
@@ -45,6 +46,15 @@ const ScaffoldsPage: React.FC = () => {
   const [bulkMode, setBulkMode] = useState(false);
   const [selectedScaffoldIds, setSelectedScaffoldIds] = useState<Set<number>>(new Set());
   const [bulkUpdating, setBulkUpdating] = useState(false);
+
+  type ViewMode = 'grid' | 'table';
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    return (sessionStorage.getItem('admin-scaffolds-view') as ViewMode) || 'grid';
+  });
+  const handleViewChange = (mode: ViewMode) => {
+    setViewMode(mode);
+    sessionStorage.setItem('admin-scaffolds-view', mode);
+  };
   // Alertas inteligentes deshabilitadas temporalmente
 
   const projects = initialProjects;
@@ -516,6 +526,40 @@ const ScaffoldsPage: React.FC = () => {
             />
           </div>
           <div className="flex items-center gap-2">
+            {/* Toggle Grid / Tabla */}
+            <div className="flex rounded-lg border border-gray-200 overflow-hidden">
+              <button
+                type="button"
+                title="Vista cuadrícula"
+                onClick={() => handleViewChange('grid')}
+                disabled={bulkMode}
+                className={`inline-flex items-center justify-center px-2.5 py-2 text-xs font-medium transition ${
+                  viewMode === 'grid'
+                    ? 'bg-[#2A64A4] text-white'
+                    : 'bg-white text-gray-600 hover:bg-gray-50'
+                } disabled:opacity-40 disabled:cursor-not-allowed`}
+              >
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M3 4a1 1 0 011-1h3a1 1 0 011 1v3a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 11a1 1 0 011-1h3a1 1 0 011 1v3a1 1 0 01-1 1H4a1 1 0 01-1-1v-3zM10 4a1 1 0 011-1h3a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1V4zM10 11a1 1 0 011-1h3a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-3z" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                title={bulkMode ? 'No disponible en modo selección múltiple' : 'Vista tabla'}
+                onClick={() => handleViewChange('table')}
+                disabled={bulkMode}
+                className={`inline-flex items-center justify-center px-2.5 py-2 text-xs font-medium transition border-l border-gray-200 ${
+                  viewMode === 'table'
+                    ? 'bg-[#2A64A4] text-white'
+                    : 'bg-white text-gray-600 hover:bg-gray-50'
+                } disabled:opacity-40 disabled:cursor-not-allowed`}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M3 14h18M10 3v18M4 3h16a1 1 0 011 1v16a1 1 0 01-1 1H4a1 1 0 01-1-1V4a1 1 0 011-1z" />
+                </svg>
+              </button>
+            </div>
+
             <button
               type="button"
               onClick={() => setShowFilters((prev) => !prev)}
@@ -757,16 +801,24 @@ const ScaffoldsPage: React.FC = () => {
       ) : selectedProjectId ? (
         filteredScaffolds.length > 0 ? (
           <div className="bg-white rounded-lg shadow-md p-3 md:p-4" data-tour="admin-scaffolds-grid">
-            <ScaffoldGrid 
-              scaffolds={filteredScaffolds} 
-              onScaffoldSelect={setSelectedScaffold}
-              onToggleCard={handleToggleCard}
-              onDisassemble={handleDisassemble}
-              projectAssignedSupervisorId={selectedProject?.assigned_supervisor_id}
-              selectable={bulkMode}
-              selectedIds={selectedScaffoldIds}
-              onToggleSelect={handleToggleSelect}
-            />
+            {viewMode === 'table' && !bulkMode ? (
+              <ScaffoldTableView
+                scaffolds={filteredScaffolds}
+                onScaffoldClick={setSelectedScaffold}
+                statusFilter={filters.status}
+              />
+            ) : (
+              <ScaffoldGrid 
+                scaffolds={filteredScaffolds} 
+                onScaffoldSelect={setSelectedScaffold}
+                onToggleCard={handleToggleCard}
+                onDisassemble={handleDisassemble}
+                projectAssignedSupervisorId={selectedProject?.assigned_supervisor_id}
+                selectable={bulkMode}
+                selectedIds={selectedScaffoldIds}
+                onToggleSelect={handleToggleSelect}
+              />
+            )}
           </div>
         ) : (
           <div className="bg-white rounded-lg shadow-md p-12 text-center">

@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
-import { useLoaderData, useNavigate, useRevalidator } from 'react-router-dom';
+import { useLoaderData, useNavigate, useParams, useRevalidator } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import Modal from '../../components/Modal';
 import ScaffoldDetailsModal from '../../components/ScaffoldDetailsModal';
 import { ProjectDashboard } from '../../components/dashboard';
+import ScaffoldTableView from '../../components/ScaffoldTableView';
 import { Project, Scaffold } from '../../types/api';
 import ImageWithFallback from '../../components/ImageWithFallback';
 import { buildImageUrl } from '../../utils/image';
 import { apiService } from '../../services/apiService';
+
+type ViewMode = 'dashboard' | 'cards' | 'table';
 
 interface ProjectDashboardSummary {
   totalCubicMeters: number;
@@ -37,12 +40,20 @@ interface LoaderData {
 const ClientProjectScaffoldsPage: React.FC = () => {
   const revalidator = useRevalidator();
   const navigate = useNavigate();
+  const { projectId } = useParams<{ projectId: string }>();
   const { project, scaffolds, summary } = useLoaderData() as LoaderData;
   const [selectedScaffold, setSelectedScaffold] = useState<Scaffold | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [showDashboard, setShowDashboard] = useState<boolean>(true);
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    return (sessionStorage.getItem(`view-project-${projectId}`) as ViewMode) || 'cards';
+  });
   const [exporting, setExporting] = useState(false);
   const [exportingExcel, setExportingExcel] = useState(false);
+
+  const handleViewChange = (mode: ViewMode) => {
+    setViewMode(mode);
+    sessionStorage.setItem(`view-project-${projectId}`, mode);
+  };
 
   const refetchScaffolds = async () => {
     revalidator.revalidate();
@@ -121,61 +132,69 @@ const ClientProjectScaffoldsPage: React.FC = () => {
         <p className="text-xs sm:text-base text-gray-500">Cliente: {project?.client_name}</p>
       </div>
 
-      {/* Toggle Dashboard/Andamios - Ultra compacto en móvil */}
+      {/* Toggle de vistas - Ultra compacto en móvil */}
       <div className="flex gap-1.5 mb-3 sm:mb-4">
+        {/* Dashboard */}
         <button
-          onClick={() => setShowDashboard(true)}
+          onClick={() => handleViewChange('dashboard')}
           className={`flex-1 sm:flex-none px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${
-            showDashboard
+            viewMode === 'dashboard'
               ? 'bg-primary-blue text-white shadow-md'
               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           }`}
         >
-          <svg
-            className="w-4 h-4"
-            fill="currentColor"
-            viewBox="0 0 20 20"
-          >
+          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
             <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
           </svg>
           <span>Dashboard</span>
         </button>
+
+        {/* Andamios (cards) */}
         <button
-          onClick={() => setShowDashboard(false)}
+          onClick={() => handleViewChange('cards')}
           data-tour="client-scaffolds"
           className={`flex-1 sm:flex-none px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${
-            !showDashboard
+            viewMode === 'cards'
               ? 'bg-primary-blue text-white shadow-md'
               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           }`}
         >
-          <svg
-            className="w-4 h-4"
-            fill="currentColor"
-            viewBox="0 0 20 20"
-          >
+          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
             <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
           </svg>
           <span>Andamios</span>
         </button>
+
+        {/* Tabla */}
+        <button
+          onClick={() => handleViewChange('table')}
+          className={`flex-1 sm:flex-none px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${
+            viewMode === 'table'
+              ? 'bg-primary-blue text-white shadow-md'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          }`}
+        >
+          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M3 14h18M10 4v16M4 4h16a1 1 0 011 1v14a1 1 0 01-1 1H4a1 1 0 01-1-1V5a1 1 0 011-1z" />
+          </svg>
+          <span>Tabla</span>
+        </button>
+
+        {/* Galería */}
         <button
           onClick={() => navigate(`/client/project/${project.id}/gallery`)}
           data-tour="client-gallery"
           className="flex-1 sm:flex-none px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all flex items-center justify-center gap-1.5 bg-gray-100 text-gray-600 hover:bg-gray-200"
         >
-          <svg
-            className="w-4 h-4"
-            fill="currentColor"
-            viewBox="0 0 20 20"
-          >
+          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
             <path d="M4 3a2 2 0 00-2 2v8a2 2 0 002 2h1v2a1 1 0 001.447.894L10 16.118l3.553 1.776A1 1 0 0015 17v-2h1a2 2 0 002-2V5a2 2 0 00-2-2H4z" />
           </svg>
           <span>Galería</span>
         </button>
       </div>
 
-      {/* Botones de exportación - Solo visible cuando HAY andamios */}
-      {!showDashboard && scaffolds && scaffolds.length > 0 && (
+      {/* Botones de exportación - Solo visible en vistas cards y tabla cuando HAY andamios */}
+      {(viewMode === 'cards' || viewMode === 'table') && scaffolds && scaffolds.length > 0 && (
         <div className="flex gap-2 mb-3">
           <button
             onClick={handleExportPDF}
@@ -204,12 +223,15 @@ const ClientProjectScaffoldsPage: React.FC = () => {
         </div>
       )}
 
-      {/* Dashboard o Lista de Andamios */}
-      {showDashboard ? (
+      {/* Dashboard */}
+      {viewMode === 'dashboard' && (
         <div data-tour="client-metrics">
           <ProjectDashboard summary={summary} projectName={project?.name} />
         </div>
-      ) : (
+      )}
+
+      {/* Vistas cards y tabla: filtros + contenido */}
+      {(viewMode === 'cards' || viewMode === 'table') && (
         <>
           {/* Filtros - Solo visible cuando HAY andamios */}
           {scaffolds && scaffolds.length > 0 && (
@@ -280,7 +302,7 @@ const ClientProjectScaffoldsPage: React.FC = () => {
             </div>
           )}
 
-          {/* Grid de andamios */}
+          {/* Vista Cards o Tabla */}
           {!filteredScaffolds || filteredScaffolds.length === 0 ? (
             <div className="bg-white rounded-lg shadow-md p-12 text-center">
               <svg
@@ -309,6 +331,12 @@ const ClientProjectScaffoldsPage: React.FC = () => {
                     } en este momento.`}
               </p>
             </div>
+          ) : viewMode === 'table' ? (
+            <ScaffoldTableView
+              scaffolds={filteredScaffolds}
+              onScaffoldClick={setSelectedScaffold}
+              statusFilter={statusFilter}
+            />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {filteredScaffolds.map((scaffold) => (
