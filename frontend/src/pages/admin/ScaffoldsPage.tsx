@@ -719,8 +719,8 @@ const ScaffoldsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Acciones masivas */}
-      {selectedProjectId && baseFilteredScaffolds.length > 0 && (
+      {/* Acciones masivas — ocultas en vista tabla */}
+      {selectedProjectId && baseFilteredScaffolds.length > 0 && viewMode !== 'table' && (
         <div className="bg-white rounded-lg shadow-md p-4 md:p-6">
           <div className="flex flex-col gap-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
