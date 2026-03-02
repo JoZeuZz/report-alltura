@@ -164,6 +164,22 @@ const Scaffold = require('../models/scaffold');
 const db = require('../db');
 const { logger } = require('../lib/logger');
 
+async function hasSupervisorProjectAccess(userId, projectId, assignedSupervisorId) {
+  if (assignedSupervisorId === userId) {
+    return true;
+  }
+
+  const { rows } = await db.query(
+    `SELECT 1
+     FROM project_users
+     WHERE project_id = $1 AND user_id = $2
+     LIMIT 1`,
+    [projectId, userId]
+  );
+
+  return rows.length > 0;
+}
+
 /**
  * Middleware: Validar acceso a un proyecto específico
  * Reglas:
@@ -200,7 +216,13 @@ async function checkProjectAccess(req, res, next) {
 
     // Validar acceso según rol
     if (user.role === 'supervisor') {
-      if (project.assigned_supervisor_id !== user.id) {
+      const hasAccess = await hasSupervisorProjectAccess(
+        user.id,
+        projectId,
+        project.assigned_supervisor_id
+      );
+
+      if (!hasAccess) {
         logger.warn('Intento de acceso no autorizado a proyecto', {
           userId: user.id,
           userRole: user.role,
@@ -283,8 +305,16 @@ async function checkScaffoldAccess(req, res, next) {
     if (user.role === 'supervisor') {
       // Supervisor debe estar asignado al proyecto del andamio
       const project = await Project.getById(scaffold.project_id);
-      
-      if (!project || project.assigned_supervisor_id !== user.id) {
+
+      const hasAccess =
+        project &&
+        (await hasSupervisorProjectAccess(
+          user.id,
+          scaffold.project_id,
+          project.assigned_supervisor_id
+        ));
+
+      if (!hasAccess) {
         logger.warn('Intento de acceso no autorizado a andamio', {
           userId: user.id,
           userRole: user.role,
