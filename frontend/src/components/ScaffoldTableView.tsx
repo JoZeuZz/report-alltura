@@ -31,7 +31,8 @@ interface ColumnDef {
 // ─── Definición de columnas (fuente de verdad) ───────────────────────────────
 
 const COLUMNS: ColumnDef[] = [
-  { key: 'scaffold_number',     label: 'Nº Andamio',      defaultWidth: 110, align: 'left',  sortable: true  },
+  { key: 'permit_number',       label: 'Nº Permiso',      defaultWidth: 120, align: 'left',  sortable: true  },
+  { key: 'scaffold_number',     label: 'Nº Andamio Auto', defaultWidth: 130, align: 'left',  sortable: true  },
   { key: 'area',                label: 'Área',             defaultWidth: 90,  align: 'left',  sortable: true  },
   { key: 'tag',                 label: 'TAG',              defaultWidth: 80,  align: 'left',  sortable: true  },
   { key: 'assembly_status',     label: 'Estado Armado',    defaultWidth: 120, align: 'left',  sortable: true  },

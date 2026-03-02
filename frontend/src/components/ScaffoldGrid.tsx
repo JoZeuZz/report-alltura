@@ -113,8 +113,11 @@ export default function ScaffoldGrid({
                 <p className="text-sm text-gray-600">
                   {scaffold.height}x{scaffold.width}x{scaffold.length} m
                 </p>
+                {scaffold.permit_number && (
+                  <p className="text-xs text-gray-700 mt-1 font-semibold">Permiso: {scaffold.permit_number}</p>
+                )}
                 {scaffold.scaffold_number && (
-                  <p className="text-xs text-gray-500 mt-1">N° {scaffold.scaffold_number}</p>
+                  <p className="text-xs text-gray-500 mt-1">N° andamio auto: {scaffold.scaffold_number}</p>
                 )}
                 <p className="text-xs sm:text-sm text-gray-500 mt-1">
                   {new Date(scaffold.assembly_created_at).toLocaleDateString()}

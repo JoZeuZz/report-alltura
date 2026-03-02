@@ -11,11 +11,12 @@ const Scaffold = {
    * @param {Object} scaffoldData - Datos del andamio
    * @returns {Promise<Object>} - Andamio creado
    */
-  async create(scaffoldData) {
+  async create(scaffoldData, dbClient = db) {
     const {
       project_id,
       user_id,
       scaffold_number,
+      permit_number,
       area,
       tag,
       height,
@@ -33,11 +34,11 @@ const Scaffold = {
 
     const query = `
       INSERT INTO scaffolds 
-        (project_id, user_id, scaffold_number, area, tag, 
+        (project_id, user_id, scaffold_number, permit_number, area, tag, 
          height, width, length, cubic_meters, progress_percentage, assembly_notes, 
          assembly_image_url, card_status, assembly_status, created_by, location, observations)
       VALUES 
-        ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+        ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
       RETURNING *
     `;
 
@@ -45,6 +46,7 @@ const Scaffold = {
       project_id,
       user_id,
       scaffold_number,
+      permit_number || null,
       area,
       tag,
       height,
@@ -61,8 +63,19 @@ const Scaffold = {
       observations,
     ];
 
-    const { rows } = await db.query(query, values);
+    const { rows } = await dbClient.query(query, values);
     return rows[0];
+  },
+
+  async getNextScaffoldNumber(projectId, dbClient = db) {
+    const query = `
+      SELECT COALESCE(MAX(CASE WHEN scaffold_number ~ '^[0-9]+$' THEN scaffold_number::int ELSE 0 END), 0) + 1 AS next_scaffold_number
+      FROM scaffolds
+      WHERE project_id = $1
+    `;
+
+    const { rows } = await dbClient.query(query, [projectId]);
+    return parseInt(rows[0].next_scaffold_number, 10);
   },
 
   /**
@@ -156,12 +169,12 @@ const Scaffold = {
    * @param {Object} updateData - Datos a actualizar
    * @returns {Promise<Object>} - Andamio actualizado
    */
-  async update(id, updateData) {
+  async update(id, updateData, dbClient = db) {
     const fields = [];
     const values = [];
     
     const allowedFields = [
-      'scaffold_number', 'area', 'tag',
+      'scaffold_number', 'permit_number', 'area', 'tag',
       'height', 'width', 'length', 'cubic_meters', 'progress_percentage', 
       'assembly_notes', 'card_status', 'assembly_status', 'assembly_image_url', 
       'disassembly_image_url', 'disassembly_notes', 'location', 'observations'
@@ -190,7 +203,7 @@ const Scaffold = {
       RETURNING *
     `;
 
-    const { rows } = await db.query(query, values);
+    const { rows } = await dbClient.query(query, values);
     return rows[0];
   },
 

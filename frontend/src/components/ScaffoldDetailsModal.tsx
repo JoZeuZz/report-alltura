@@ -446,9 +446,15 @@ const ScaffoldDetailsModal: React.FC<ScaffoldDetailsModalProps> = ({
                 <p className="font-semibold text-dark-blue">{scaffold.project_name}</p>
               </div>
             )}
+            {scaffold.permit_number && (
+              <div>
+                <span className="text-gray-600 text-sm">N° de Permiso:</span>
+                <p className="font-semibold">{scaffold.permit_number}</p>
+              </div>
+            )}
             {scaffold.scaffold_number && (
               <div>
-                <span className="text-gray-600 text-sm">N° de Andamio:</span>
+                <span className="text-gray-600 text-sm">N° de Andamio (automático):</span>
                 <p className="font-semibold">{scaffold.scaffold_number}</p>
               </div>
             )}
@@ -507,6 +513,23 @@ const ScaffoldDetailsModal: React.FC<ScaffoldDetailsModalProps> = ({
             <p className="text-xl md:text-2xl font-bold text-primary-blue">{scaffold.cubic_meters} m³</p>
           </div>
         </div>
+
+        {Array.isArray(scaffold.sections) && scaffold.sections.length > 0 && (
+          <div className="mt-4 bg-white rounded-lg p-3 border border-gray-200">
+            <h4 className="font-semibold text-dark-blue mb-2">Secciones</h4>
+            <div className="space-y-2">
+              {scaffold.sections.map((section) => (
+                <div key={section.id} className="flex flex-wrap items-center justify-between text-sm bg-gray-50 rounded px-3 py-2">
+                  <span className="font-medium text-gray-700">Sección {section.section_order}</span>
+                  <span className="text-gray-600">
+                    {section.height} × {section.width} × {section.length} m
+                  </span>
+                  <span className="font-semibold text-primary-blue">{section.cubic_meters} m³</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         
         {/* Total con modificaciones */}
         {totalAdditionalCubicMeters > 0 && (

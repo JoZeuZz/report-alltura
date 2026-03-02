@@ -50,6 +50,9 @@ const setupDatabase = async () => {
           id SERIAL PRIMARY KEY,
           client_id INTEGER NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
           name VARCHAR(255) NOT NULL,
+          contract_code VARCHAR(255),
+          contracted_cubic_meters DECIMAL(12,2) NOT NULL DEFAULT 0,
+          next_scaffold_number INTEGER NOT NULL DEFAULT 1,
           status VARCHAR(50) NOT NULL DEFAULT 'active' CHECK(status IN ('active', 'completed')),
           created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
       );
@@ -63,6 +66,7 @@ const setupDatabase = async () => {
           user_id INTEGER NOT NULL REFERENCES users(id),
           created_by INTEGER NOT NULL REFERENCES users(id),
           scaffold_number VARCHAR(255),
+          permit_number VARCHAR(255),
           area VARCHAR(255),
           tag VARCHAR(255),
           width DECIMAL NOT NULL,
@@ -84,6 +88,20 @@ const setupDatabase = async () => {
       );
     `);
 
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS scaffold_sections (
+          id SERIAL PRIMARY KEY,
+          scaffold_id INTEGER NOT NULL REFERENCES scaffolds(id) ON DELETE CASCADE,
+          section_order INTEGER NOT NULL,
+          width DECIMAL NOT NULL,
+          length DECIMAL NOT NULL,
+          height DECIMAL NOT NULL,
+          cubic_meters DECIMAL NOT NULL,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+          UNIQUE(scaffold_id, section_order)
+      );
+    `);
+
     // Add columns if they don't exist (for migration from old structure)
     await client.query(`ALTER TABLE scaffolds ADD COLUMN IF NOT EXISTS created_by INTEGER REFERENCES users(id)`);
     await client.query(`ALTER TABLE scaffolds ADD COLUMN IF NOT EXISTS scaffold_number VARCHAR(255)`);
@@ -98,6 +116,10 @@ const setupDatabase = async () => {
     
     // Add active column to projects for soft delete
     await client.query(`ALTER TABLE projects ADD COLUMN IF NOT EXISTS active BOOLEAN DEFAULT true`);
+    await client.query(`ALTER TABLE projects ADD COLUMN IF NOT EXISTS contract_code VARCHAR(255)`);
+    await client.query(`ALTER TABLE projects ADD COLUMN IF NOT EXISTS contracted_cubic_meters DECIMAL(12,2) NOT NULL DEFAULT 0`);
+    await client.query(`ALTER TABLE projects ADD COLUMN IF NOT EXISTS next_scaffold_number INTEGER NOT NULL DEFAULT 1`);
+    await client.query(`ALTER TABLE scaffolds ADD COLUMN IF NOT EXISTS permit_number VARCHAR(255)`);
     
     // Rename old column if exists
     await client.query(`ALTER TABLE scaffolds RENAME COLUMN IF EXISTS depth TO length`);

@@ -21,6 +21,11 @@ export default function ProjectForm({ project, clients, supervisors, clientUsers
   const [selectedClientId, setSelectedClientId] = useState<number | null>(
     project?.client_id || (clients.length > 0 ? clients[0].id : null)
   );
+  const [contractedCubicMeters, setContractedCubicMeters] = useState<string>(
+    project?.contracted_cubic_meters !== undefined && project?.contracted_cubic_meters !== null
+      ? String(Number(project.contracted_cubic_meters) || 0)
+      : '0'
+  );
 
   // Obtener errores de validación
   const errors = actionData?.fieldErrors || {};
@@ -85,6 +90,49 @@ export default function ProjectForm({ project, clients, supervisors, clientUsers
           />
           {errors.name && (
             <p className="text-red-500 text-xs italic mt-1">{errors.name}</p>
+          )}
+        </div>
+
+        <div className="mb-4">
+          <label htmlFor="contract_code" className="block text-gray-700 text-sm font-bold mb-2">
+            Código OS/OC/Contrato
+          </label>
+          <input
+            type="text"
+            id="contract_code"
+            name="contract_code"
+            defaultValue={project?.contract_code || ''}
+            className={`shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline ${
+              errors.contract_code ? 'border-red-500 focus:border-red-500' : 'focus:border-primary-blue'
+            }`}
+            placeholder="Ej: OS-2026-001"
+            disabled={isSubmitting}
+          />
+          {errors.contract_code && (
+            <p className="text-red-500 text-xs italic mt-1">{errors.contract_code}</p>
+          )}
+        </div>
+
+        <div className="mb-4">
+          <label htmlFor="contracted_cubic_meters" className="block text-gray-700 text-sm font-bold mb-2">
+            Total m³ Contratados *
+          </label>
+          <input
+            type="number"
+            id="contracted_cubic_meters"
+            name="contracted_cubic_meters"
+            min="0"
+            step="0.01"
+            value={contractedCubicMeters}
+            onChange={(e) => setContractedCubicMeters(e.target.value)}
+            className={`shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline ${
+              errors.contracted_cubic_meters ? 'border-red-500 focus:border-red-500' : 'focus:border-primary-blue'
+            }`}
+            required
+            disabled={isSubmitting}
+          />
+          {errors.contracted_cubic_meters && (
+            <p className="text-red-500 text-xs italic mt-1">{errors.contracted_cubic_meters}</p>
           )}
         </div>
 

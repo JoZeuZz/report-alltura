@@ -30,6 +30,11 @@ const projectSchema = Joi.object({
   name: entityName.required().messages({
     'any.required': 'El nombre del proyecto es obligatorio',
   }),
+  contract_code: Joi.string().trim().max(255).allow('', null),
+  contracted_cubic_meters: Joi.number().min(0).precision(2).default(0).messages({
+    'number.base': 'Los m3 contratados deben ser numéricos',
+    'number.min': 'Los m3 contratados no pueden ser negativos',
+  }),
   status: projectStatus.default('active'),
   assigned_client_id: id.allow(null),
   assigned_supervisor_id: id.allow(null),
@@ -45,7 +50,7 @@ const assignUsersSchema = Joi.object({
 
 const { windowMs: reportWindowMs, max: reportMax } = getRateLimitConfig('REPORT', {
   windowMs: 5 * 60 * 1000,
-  max: 10,
+  max: 60,
 });
 
 const reportLimiter = createRedisRateLimiter({

@@ -42,6 +42,9 @@ const createScaffoldSchema = Joi.object({
     'any.required': 'El proyecto es obligatorio',
   }),
   scaffold_number: shortText.allow('', null),
+  permit_number: shortText.required().messages({
+    'any.required': 'El N° de permiso es obligatorio',
+  }),
   area: shortText.allow('', null),
   tag: shortText.allow('', null),
   height: dimension.required().messages({
@@ -59,6 +62,21 @@ const createScaffoldSchema = Joi.object({
   assembly_notes: longText.allow('', null),
   location: address.allow('', null),
   observations: longText.allow('', null),
+  sections: Joi.alternatives().try(Joi.array(), Joi.string()).optional(),
+});
+
+const updateScaffoldSchema = Joi.object({
+  permit_number: shortText.allow('', null),
+  area: shortText.allow('', null),
+  tag: shortText.allow('', null),
+  height: dimension.optional(),
+  width: dimension.optional(),
+  length: dimension.optional(),
+  progress_percentage: percentage.optional(),
+  assembly_notes: longText.allow('', null),
+  location: address.allow('', null),
+  observations: longText.allow('', null),
+  sections: Joi.alternatives().try(Joi.array(), Joi.string()).optional(),
 });
 
 const updateScaffoldStatusSchema = Joi.object({
@@ -193,7 +211,7 @@ router.put(
         !req.body.project_id &&
         !req.body.height;
 
-      const schema = isStatusUpdate ? updateScaffoldStatusSchema : createScaffoldSchema;
+      const schema = isStatusUpdate ? updateScaffoldStatusSchema : updateScaffoldSchema;
       req.body = await schema.validateAsync(req.body);
       next();
     } catch (err) {

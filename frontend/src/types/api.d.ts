@@ -16,6 +16,8 @@ export interface Project {
   id: number;
   client_id: number;
   name: string;
+  contract_code?: string | null;
+  contracted_cubic_meters?: number;
   status: 'active' | 'inactive' | 'completed';
   created_at: string;
   client_name: string;  active: boolean;
@@ -58,6 +60,15 @@ export interface Scaffold {
   updated_at?: string; // Nuevo: timestamp de última actualización
   project_name?: string;
   scaffold_number?: string;
+  permit_number?: string;
+  sections?: Array<{
+    id: number;
+    section_order: number;
+    width: number;
+    length: number;
+    height: number;
+    cubic_meters: number;
+  }>;
   area?: string;
   tag?: string;
   height: number;

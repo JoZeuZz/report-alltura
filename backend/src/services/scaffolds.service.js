@@ -1,6 +1,7 @@
 const Scaffold = require('../models/scaffold');
 const ScaffoldHistory = require('../models/scaffoldHistory');
 const ScaffoldModification = require('../models/scaffoldModification');
+const ScaffoldSection = require('../models/scaffoldSection');
 const Project = require('../models/project');
 const { uploadFile, deleteFileByUrl, resolveImageUrl } = require('../lib/googleCloud');
 const { logger } = require('../lib/logger');
@@ -40,6 +41,66 @@ class ScaffoldService {
   static async _resolveScaffoldsImages(scaffolds) {
     if (!Array.isArray(scaffolds)) return scaffolds;
     return Promise.all(scaffolds.map((scaffold) => this._resolveScaffoldImages(scaffold)));
+  }
+
+  static parseAndValidateSections(scaffoldData) {
+    let rawSections = scaffoldData.sections;
+
+    if (typeof rawSections === 'string') {
+      try {
+        rawSections = JSON.parse(rawSections);
+      } catch (_error) {
+        const error = new Error('Formato inválido para secciones de andamio');
+        error.statusCode = 400;
+        throw error;
+      }
+    }
+
+    const fallbackSection = {
+      height: scaffoldData.height,
+      width: scaffoldData.width,
+      length: scaffoldData.length,
+    };
+
+    const sectionsSource = Array.isArray(rawSections) && rawSections.length > 0 ? rawSections : [fallbackSection];
+
+    const sections = sectionsSource.map((section, index) => {
+      const height = Number(section.height);
+      const width = Number(section.width);
+      const length = Number(section.length);
+
+      if (!Number.isFinite(height) || !Number.isFinite(width) || !Number.isFinite(length)) {
+        const error = new Error(`La sección ${index + 1} tiene dimensiones inválidas`);
+        error.statusCode = 400;
+        throw error;
+      }
+
+      if (height <= 0 || width <= 0 || length <= 0) {
+        const error = new Error(`La sección ${index + 1} debe tener dimensiones mayores que 0`);
+        error.statusCode = 400;
+        throw error;
+      }
+
+      if (height > 999.99 || width > 999.99 || length > 999.99) {
+        const error = new Error(`La sección ${index + 1} excede el límite máximo de 999.99 metros`);
+        error.statusCode = 400;
+        throw error;
+      }
+
+      return {
+        height,
+        width,
+        length,
+      };
+    });
+
+    const primarySection = sections[0];
+    const cubic_meters = sections.reduce(
+      (total, section) => total + this.calculateCubicMeters(section.height, section.width, section.length),
+      0
+    );
+
+    return { sections, primarySection, cubic_meters };
   }
   // ============================================
   // UTILIDADES Y CÁLCULOS
@@ -288,6 +349,8 @@ class ScaffoldService {
       return null;
     }
 
+    const sections = await ScaffoldSection.getByScaffold(scaffoldId);
+
     // Obtener metros cúbicos adicionales aprobados
     const additionalCubicMeters = await ScaffoldModification.getTotalApprovedCubicMeters(scaffoldId);
     
@@ -300,7 +363,8 @@ class ScaffoldService {
     return {
       ...resolvedScaffold,
       additional_cubic_meters: additionalCubicMeters,
-      total_cubic_meters: totalCubicMeters
+      total_cubic_meters: totalCubicMeters,
+      sections,
     };
   }
 
@@ -318,11 +382,13 @@ class ScaffoldService {
         const additionalCubicMeters = await ScaffoldModification.getTotalApprovedCubicMeters(scaffold.id);
         const baseCubicMeters = parseFloat(scaffold.cubic_meters);
         const totalCubicMeters = baseCubicMeters + additionalCubicMeters;
+        const sections = await ScaffoldSection.getByScaffold(scaffold.id);
 
         return {
           ...scaffold,
           additional_cubic_meters: additionalCubicMeters,
-          total_cubic_meters: totalCubicMeters
+          total_cubic_meters: totalCubicMeters,
+          sections,
         };
       })
     );
@@ -377,6 +443,15 @@ class ScaffoldService {
       throw error;
     }
 
+    const permitNumber = String(scaffoldData.permit_number || '').trim();
+    if (!permitNumber) {
+      const error = new Error('El N° de permiso es obligatorio.');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const { sections, primarySection, cubic_meters } = this.parseAndValidateSections(scaffoldData);
+
     // Validar proyecto activo
     const project = await this.validateActiveProject(scaffoldData.project_id);
 
@@ -391,28 +466,56 @@ class ScaffoldService {
     // Subir imagen a Google Cloud Storage
     const assemblyImageUrl = await uploadFile(imageFile);
 
-    // Calcular metros cúbicos
-    const cubic_meters = this.calculateCubicMeters(
-      scaffoldData.height,
-      scaffoldData.width,
-      scaffoldData.length
-    );
-
     // Determinar estado de armado
     const { assembly_status, card_status } = this.determineAssemblyState(
       scaffoldData.progress_percentage || 0
     );
 
-    // Crear andamio en la base de datos
-    const scaffold = await Scaffold.create({
-      ...scaffoldData,
-      user_id: user.id,
-      cubic_meters,
-      assembly_image_url: assemblyImageUrl,
-      card_status,
-      assembly_status,
-      progress_percentage: scaffoldData.progress_percentage || 0,
-    });
+    const client = await db.pool.connect();
+    let scaffold;
+
+    try {
+      await client.query('BEGIN');
+      const { rows: projectCounterRows } = await client.query(
+        'SELECT next_scaffold_number FROM projects WHERE id = $1 FOR UPDATE',
+        [scaffoldData.project_id]
+      );
+
+      const nextScaffoldNumber = parseInt(projectCounterRows[0]?.next_scaffold_number, 10) || 1;
+
+      scaffold = await Scaffold.create(
+        {
+          ...scaffoldData,
+          user_id: user.id,
+          scaffold_number: String(nextScaffoldNumber),
+          permit_number: permitNumber,
+          height: primarySection.height,
+          width: primarySection.width,
+          length: primarySection.length,
+          cubic_meters,
+          assembly_image_url: assemblyImageUrl,
+          card_status,
+          assembly_status,
+          progress_percentage: scaffoldData.progress_percentage || 0,
+        },
+        client
+      );
+
+      await ScaffoldSection.replaceForScaffold(scaffold.id, sections, client);
+
+      await client.query(
+        'UPDATE projects SET next_scaffold_number = $1 WHERE id = $2',
+        [nextScaffoldNumber + 1, scaffoldData.project_id]
+      );
+
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      await deleteFileByUrl(assemblyImageUrl);
+      throw error;
+    } finally {
+      client.release();
+    }
 
     // Registrar en historial de auditoría
     await ScaffoldHistory.create({
@@ -429,7 +532,11 @@ class ScaffoldService {
     });
 
     logger.info(`Andamio ${scaffold.id} creado por usuario ${user.id}`);
-    return await this._resolveScaffoldImages(scaffold);
+    const resolved = await this._resolveScaffoldImages(scaffold);
+    return {
+      ...resolved,
+      sections,
+    };
   }
 
   /**
@@ -463,6 +570,7 @@ class ScaffoldService {
       !updateData.height;
 
     let dataToUpdate;
+    let sectionsToPersist = null;
 
     if (isStatusUpdate) {
       // Validación: andamios desarmados son inmutables
@@ -474,21 +582,50 @@ class ScaffoldService {
       // Sincronizar estado automáticamente
       dataToUpdate = this.synchronizeAssemblyState(updateData);
     } else {
-      // Actualización completa: recalcular m³
-      const cubic_meters = this.calculateCubicMeters(
-        updateData.height,
-        updateData.width,
-        updateData.length
-      );
+      // Actualización completa: recalcular m³ (sumando secciones)
+      const { sections, primarySection, cubic_meters } = this.parseAndValidateSections({
+        ...scaffold,
+        ...updateData,
+      });
+
+      sectionsToPersist = sections;
 
       dataToUpdate = {
         ...updateData,
+        height: primarySection.height,
+        width: primarySection.width,
+        length: primarySection.length,
         cubic_meters,
       };
+
+      if (dataToUpdate.permit_number !== undefined) {
+        const normalizedPermit = String(dataToUpdate.permit_number || '').trim();
+        if (!normalizedPermit) {
+          const error = new Error('El N° de permiso es obligatorio.');
+          error.statusCode = 400;
+          throw error;
+        }
+        dataToUpdate.permit_number = normalizedPermit;
+      }
     }
 
-    // Actualizar andamio
-    const updated = await Scaffold.update(scaffoldId, dataToUpdate);
+    let updated;
+    if (sectionsToPersist) {
+      const client = await db.pool.connect();
+      try {
+        await client.query('BEGIN');
+        updated = await Scaffold.update(scaffoldId, dataToUpdate, client);
+        await ScaffoldSection.replaceForScaffold(scaffoldId, sectionsToPersist, client);
+        await client.query('COMMIT');
+      } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+      } finally {
+        client.release();
+      }
+    } else {
+      updated = await Scaffold.update(scaffoldId, dataToUpdate);
+    }
 
     // Registrar cambios en historial
     await ScaffoldHistory.createFromChanges(scaffoldId, user.id, scaffold, updated, {
@@ -499,7 +636,12 @@ class ScaffoldService {
     });
 
     logger.info(`Andamio ${scaffoldId} actualizado por usuario ${user.id}`);
-    return await this._resolveScaffoldImages(updated);
+    const resolved = await this._resolveScaffoldImages(updated);
+    const sections = await ScaffoldSection.getByScaffold(scaffoldId);
+    return {
+      ...resolved,
+      sections,
+    };
   }
 
   /**

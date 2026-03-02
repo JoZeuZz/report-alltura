@@ -77,6 +77,9 @@ const initializeDatabase = async () => {
         id SERIAL PRIMARY KEY,
         client_id INTEGER NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
         name VARCHAR(255) NOT NULL,
+        contract_code VARCHAR(255),
+        contracted_cubic_meters DECIMAL(12,2) NOT NULL DEFAULT 0 CHECK (contracted_cubic_meters >= 0),
+        next_scaffold_number INTEGER NOT NULL DEFAULT 1 CHECK (next_scaffold_number >= 1),
         status VARCHAR(50) NOT NULL DEFAULT 'active' CHECK(status IN ('active', 'completed')),
         active BOOLEAN DEFAULT true,
         assigned_client_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
@@ -93,6 +96,7 @@ const initializeDatabase = async () => {
         user_id INTEGER NOT NULL REFERENCES users(id),
         created_by INTEGER NOT NULL REFERENCES users(id),
         scaffold_number VARCHAR(255),
+        permit_number VARCHAR(255),
         area VARCHAR(255),
         tag VARCHAR(255),
         width DECIMAL NOT NULL,
@@ -113,6 +117,21 @@ const initializeDatabase = async () => {
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
       )
     `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS scaffold_sections (
+        id SERIAL PRIMARY KEY,
+        scaffold_id INTEGER NOT NULL REFERENCES scaffolds(id) ON DELETE CASCADE,
+        section_order INTEGER NOT NULL CHECK(section_order >= 1),
+        width DECIMAL NOT NULL CHECK(width > 0),
+        length DECIMAL NOT NULL CHECK(length > 0),
+        height DECIMAL NOT NULL CHECK(height > 0),
+        cubic_meters DECIMAL NOT NULL CHECK(cubic_meters > 0),
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        UNIQUE(scaffold_id, section_order)
+      )
+    `);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_scaffold_sections_scaffold ON scaffold_sections(scaffold_id, section_order)`);
 
     // Crear tabla de historial de andamios si no existe
     await client.query(`
@@ -292,6 +311,34 @@ const initializeDatabase = async () => {
       BEGIN
         IF NOT EXISTS (
           SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'projects' AND column_name = 'contract_code'
+        ) THEN
+          ALTER TABLE projects ADD COLUMN contract_code VARCHAR(255);
+        END IF;
+
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'projects' AND column_name = 'contracted_cubic_meters'
+        ) THEN
+          ALTER TABLE projects ADD COLUMN contracted_cubic_meters DECIMAL(12,2) NOT NULL DEFAULT 0;
+        END IF;
+
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'projects' AND column_name = 'next_scaffold_number'
+        ) THEN
+          ALTER TABLE projects ADD COLUMN next_scaffold_number INTEGER NOT NULL DEFAULT 1;
+        END IF;
+
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'scaffolds' AND column_name = 'permit_number'
+        ) THEN
+          ALTER TABLE scaffolds ADD COLUMN permit_number VARCHAR(255);
+        END IF;
+
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
           WHERE table_name = 'scaffold_history' AND column_name = 'scaffold_number'
         ) THEN
           ALTER TABLE scaffold_history ADD COLUMN scaffold_number VARCHAR(255);
@@ -317,7 +364,44 @@ const initializeDatabase = async () => {
         ) THEN
           ALTER TABLE scaffold_history ADD COLUMN tag VARCHAR(255);
         END IF;
+
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.table_constraints
+          WHERE table_name = 'projects'
+            AND constraint_name = 'projects_contracted_cubic_meters_check'
+        ) THEN
+          ALTER TABLE projects
+          ADD CONSTRAINT projects_contracted_cubic_meters_check
+          CHECK (contracted_cubic_meters >= 0);
+        END IF;
       END $$;
+    `);
+
+    await client.query(`
+      DO $$
+      BEGIN
+        BEGIN
+          CREATE UNIQUE INDEX IF NOT EXISTS uq_scaffolds_project_scaffold_number
+          ON scaffolds(project_id, scaffold_number)
+          WHERE scaffold_number IS NOT NULL;
+        EXCEPTION WHEN others THEN
+          RAISE NOTICE 'No se pudo crear índice único de scaffold_number por datos existentes: %', SQLERRM;
+        END;
+      END $$;
+    `);
+
+    await client.query(`
+      UPDATE projects p
+      SET next_scaffold_number = sub.next_number
+      FROM (
+        SELECT
+          project_id,
+          COALESCE(MAX(CASE WHEN scaffold_number ~ '^[0-9]+$' THEN scaffold_number::int ELSE 0 END), 0) + 1 AS next_number
+        FROM scaffolds
+        GROUP BY project_id
+      ) AS sub
+      WHERE p.id = sub.project_id
+        AND p.next_scaffold_number < sub.next_number
     `);
 
     // Actualizar CHECK constraint de assembly_status para permitir 'in_progress'

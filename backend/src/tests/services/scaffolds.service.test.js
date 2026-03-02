@@ -1,14 +1,25 @@
 const ScaffoldService = require('../../services/scaffolds.service');
 const Scaffold = require('../../models/scaffold');
+const ScaffoldSection = require('../../models/scaffoldSection');
 const ScaffoldHistory = require('../../models/scaffoldHistory');
 const Project = require('../../models/project');
-const { uploadFile } = require('../../lib/googleCloud');
+const db = require('../../db');
+const { uploadFile, resolveImageUrl } = require('../../lib/googleCloud');
 
 jest.mock('../../models/scaffold');
+jest.mock('../../models/scaffoldSection');
 jest.mock('../../models/scaffoldHistory');
 jest.mock('../../models/project');
+jest.mock('../../db', () => ({
+  query: jest.fn(),
+  pool: {
+    connect: jest.fn(),
+  },
+}));
 jest.mock('../../lib/googleCloud', () => ({
   uploadFile: jest.fn(),
+  deleteFileByUrl: jest.fn(),
+  resolveImageUrl: jest.fn(),
 }));
 jest.mock('../../lib/logger', () => ({
   logger: {
@@ -19,8 +30,16 @@ jest.mock('../../lib/logger', () => ({
 }));
 
 describe('ScaffoldService', () => {
+  let mockClient;
+
   beforeEach(() => {
     jest.clearAllMocks();
+    mockClient = {
+      query: jest.fn(),
+      release: jest.fn(),
+    };
+    db.pool.connect.mockResolvedValue(mockClient);
+    resolveImageUrl.mockImplementation(async (value) => value);
   });
 
   describe('calculateCubicMeters', () => {
@@ -56,7 +75,7 @@ describe('ScaffoldService', () => {
     const user = { id: 1, role: 'supervisor' };
     const scaffoldData = {
       project_id: 1,
-      scaffold_number: 'A-001',
+      permit_number: 'PERM-001',
       area: 'Zona Norte',
       tag: 'TAG-001',
       height: 10,
@@ -80,9 +99,21 @@ describe('ScaffoldService', () => {
     });
 
     it('debe crear un andamio exitosamente', async () => {
-      Project.getById.mockResolvedValue({ id: 1, name: 'Proyecto Test', active: true, client_active: true });
+      Project.getById.mockResolvedValue({
+        id: 1,
+        name: 'Proyecto Test',
+        active: true,
+        client_active: true,
+        assigned_client_id: 99,
+      });
       uploadFile.mockResolvedValue('https://gcs/img.png');
-      Scaffold.create.mockResolvedValue({ id: 10, ...scaffoldData });
+      mockClient.query
+        .mockResolvedValueOnce({}) // BEGIN
+        .mockResolvedValueOnce({ rows: [{ next_scaffold_number: 1 }] }) // lock project
+        .mockResolvedValueOnce({}) // update counter
+        .mockResolvedValueOnce({}); // COMMIT
+      Scaffold.create.mockResolvedValue({ id: 10, ...scaffoldData, scaffold_number: '1' });
+      ScaffoldSection.replaceForScaffold.mockResolvedValue([]);
       ScaffoldHistory.create.mockResolvedValue({});
 
       const result = await ScaffoldService.createScaffold(scaffoldData, user, Buffer.from('img'));
@@ -92,11 +123,15 @@ describe('ScaffoldService', () => {
         expect.objectContaining({
           project_id: 1,
           user_id: 1,
+          scaffold_number: '1',
+          permit_number: 'PERM-001',
           assembly_image_url: 'https://gcs/img.png',
           card_status: 'red',
           assembly_status: 'disassembled',
-        })
+        }),
+        mockClient
       );
+      expect(ScaffoldSection.replaceForScaffold).toHaveBeenCalled();
       expect(ScaffoldHistory.create).toHaveBeenCalled();
       expect(result).toMatchObject({ id: 10 });
     });

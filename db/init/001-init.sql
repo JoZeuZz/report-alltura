@@ -36,6 +36,9 @@ CREATE TABLE IF NOT EXISTS projects (
   id SERIAL PRIMARY KEY,
   client_id INTEGER NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
   name VARCHAR(255) NOT NULL,
+    contract_code VARCHAR(255),
+    contracted_cubic_meters DECIMAL(12,2) NOT NULL DEFAULT 0 CHECK (contracted_cubic_meters >= 0),
+    next_scaffold_number INTEGER NOT NULL DEFAULT 1 CHECK (next_scaffold_number >= 1),
   status VARCHAR(50) NOT NULL DEFAULT 'active' CHECK(status IN ('active', 'completed')),
   active BOOLEAN DEFAULT true,
   assigned_client_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
@@ -50,6 +53,7 @@ CREATE TABLE IF NOT EXISTS scaffolds (
     user_id INTEGER NOT NULL REFERENCES users(id),
     created_by INTEGER NOT NULL REFERENCES users(id),
     scaffold_number VARCHAR(255),
+    permit_number VARCHAR(255),
     area VARCHAR(255),
     tag VARCHAR(255),
     width DECIMAL NOT NULL,
@@ -69,6 +73,21 @@ CREATE TABLE IF NOT EXISTS scaffolds (
     disassembled_at TIMESTAMP WITH TIME ZONE,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+CREATE TABLE IF NOT EXISTS scaffold_sections (
+    id SERIAL PRIMARY KEY,
+    scaffold_id INTEGER NOT NULL REFERENCES scaffolds(id) ON DELETE CASCADE,
+    section_order INTEGER NOT NULL CHECK(section_order >= 1),
+    width DECIMAL NOT NULL CHECK(width > 0),
+    length DECIMAL NOT NULL CHECK(length > 0),
+    height DECIMAL NOT NULL CHECK(height > 0),
+    cubic_meters DECIMAL NOT NULL CHECK(cubic_meters > 0),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(scaffold_id, section_order)
+);
+
+CREATE INDEX IF NOT EXISTS idx_scaffold_sections_scaffold ON scaffold_sections(scaffold_id, section_order);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_scaffolds_project_scaffold_number ON scaffolds(project_id, scaffold_number) WHERE scaffold_number IS NOT NULL;
 
 -- Creación de la tabla de historial de andamios
 -- Historial inmutable: sobrevive a la eliminación de andamios

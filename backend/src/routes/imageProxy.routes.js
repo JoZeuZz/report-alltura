@@ -37,7 +37,7 @@ const localUploadsDir = path.join(__dirname, '../../uploads');
 
 const { windowMs: imageProxyWindowMs, max: imageProxyMax } = getRateLimitConfig('IMAGE_PROXY', {
   windowMs: 60 * 1000,
-  max: 240,
+  max: 1200,
 });
 
 const imageProxyLimiter = createRedisRateLimiter({

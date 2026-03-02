@@ -6,15 +6,26 @@ const Project = {
    * Ahora permite asignar cliente y supervisor opcionalmente
    * También sincroniza con la tabla project_users
    */
-  async create({ client_id, name, status, assigned_client_id, assigned_supervisor_id }) {
+  async create({ client_id, name, contract_code, contracted_cubic_meters, status, assigned_client_id, assigned_supervisor_id }) {
     const client = await db.pool.connect();
     try {
       await client.query('BEGIN');
       
       // Crear el proyecto
       const { rows } = await client.query(
-        'INSERT INTO projects (client_id, name, status, assigned_client_id, assigned_supervisor_id) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-        [client_id, name, status || 'active', assigned_client_id || null, assigned_supervisor_id || null]
+        `INSERT INTO projects 
+          (client_id, name, contract_code, contracted_cubic_meters, status, assigned_client_id, assigned_supervisor_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         RETURNING *`,
+        [
+          client_id,
+          name,
+          contract_code || null,
+          contracted_cubic_meters ?? 0,
+          status || 'active',
+          assigned_client_id || null,
+          assigned_supervisor_id || null,
+        ]
       );
       const newProject = rows[0];
       
@@ -116,7 +127,7 @@ const Project = {
    * Ahora permite actualizar cliente y supervisor asignados
    * También sincroniza con la tabla project_users
    */
-  async update(id, { client_id, name, status, assigned_client_id, assigned_supervisor_id }) {
+  async update(id, { client_id, name, contract_code, contracted_cubic_meters, status, assigned_client_id, assigned_supervisor_id }) {
     const client = await db.pool.connect();
     try {
       await client.query('BEGIN');
@@ -131,6 +142,14 @@ const Project = {
       if (name !== undefined) {
         values.push(name);
         fields.push(`name = $${values.length}`);
+      }
+      if (contract_code !== undefined) {
+        values.push(contract_code || null);
+        fields.push(`contract_code = $${values.length}`);
+      }
+      if (contracted_cubic_meters !== undefined) {
+        values.push(contracted_cubic_meters);
+        fields.push(`contracted_cubic_meters = $${values.length}`);
       }
       if (status !== undefined) {
         values.push(status);

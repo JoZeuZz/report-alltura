@@ -48,6 +48,14 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
       label: 'Cliente',
       value: project.client_name,
     },
+    {
+      label: 'Código',
+      value: project.contract_code || '—',
+    },
+    {
+      label: 'm³ Contratados',
+      value: `${(Number(project.contracted_cubic_meters) || 0).toFixed(2)} m³`,
+    },
   ];
   
   const actions: CardAction[] = [];

@@ -89,6 +89,13 @@ class DashboardService {
         [projectId]
       );
 
+      const projectResult = await db.query(
+        `SELECT contracted_cubic_meters
+         FROM projects
+         WHERE id = $1`,
+        [projectId]
+      );
+
       // 2. Estadísticas de andamios por estado en el proyecto
       const scaffoldStatsResult = await db.query(
         `SELECT 
@@ -130,19 +137,15 @@ class DashboardService {
         [projectId]
       );
 
-      // 5. Progreso promedio del proyecto
-      const progressResult = await db.query(
-        `SELECT 
-          COALESCE(AVG(progress_percentage), 0) as avg_progress
-        FROM scaffolds
-        WHERE project_id = $1`,
-        [projectId]
-      );
-
       const cubicMetersStats = cubicMetersResult.rows[0];
       const scaffoldStats = scaffoldStatsResult.rows[0];
       const recentCount = recentScaffoldsResult.rows[0].recent_count;
-      const avgProgress = Math.round(parseFloat(progressResult.rows[0].avg_progress) || 0);
+      const contractedCubicMeters = parseFloat(projectResult.rows[0]?.contracted_cubic_meters) || 0;
+      const assembledCubicMeters = parseFloat(cubicMetersStats.assembled_cubic_meters) || 0;
+      const completionPercentage =
+        contractedCubicMeters > 0
+          ? Math.min(100, Math.round((assembledCubicMeters / contractedCubicMeters) * 100))
+          : 0;
 
       const recentScaffolds = await Promise.all(
         (recentScaffoldsListResult.rows || []).map(async (scaffold) => ({
@@ -155,9 +158,11 @@ class DashboardService {
       return {
         // Métricas de metros cúbicos
         totalCubicMeters: parseFloat(cubicMetersStats.total_cubic_meters) || 0,
-        assembledCubicMeters: parseFloat(cubicMetersStats.assembled_cubic_meters) || 0,
+        assembledCubicMeters,
         disassembledCubicMeters: parseFloat(cubicMetersStats.disassembled_cubic_meters) || 0,
         inProgressCubicMeters: parseFloat(cubicMetersStats.in_progress_cubic_meters) || 0,
+        contractedCubicMeters,
+        completionPercentage,
 
         // Métricas de andamios
         totalScaffolds: scaffoldStats.total_scaffolds || 0,
@@ -170,7 +175,7 @@ class DashboardService {
         // Métricas adicionales
         recentScaffoldsCount: recentCount || 0,
         recentScaffolds,
-        avgProgress: avgProgress,
+        avgProgress: completionPercentage,
       };
     } catch (error) {
       logger.error('Error al obtener resumen del proyecto:', error);

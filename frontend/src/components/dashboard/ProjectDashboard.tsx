@@ -9,6 +9,8 @@ interface ProjectDashboardSummary {
   assembledCubicMeters: number;
   disassembledCubicMeters: number;
   inProgressCubicMeters: number;
+  contractedCubicMeters?: number;
+  completionPercentage?: number;
 
   // Andamios
   totalScaffolds: number;
@@ -129,11 +131,11 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ summary, projectNam
           subtitle={`Promedio: ${summary.totalScaffolds > 0 ? formatM3(summary.totalCubicMeters / summary.totalScaffolds) : '0.00'} m³`}
         />
         <MetricCard
-          title="Progreso Promedio"
-          value={`${summary.avgProgress}%`}
+          title="Avance Real"
+          value={`${summary.completionPercentage ?? summary.avgProgress}%`}
           icon={ClockIcon}
           colorClass="text-blue-600"
-          subtitle="Del proyecto completo"
+          subtitle={`Armados vs contratado${typeof summary.contractedCubicMeters === 'number' ? ` (${formatM3(summary.contractedCubicMeters)} m³)` : ''}`}
         />
         <MetricCard
           title="Creados Hoy"
@@ -236,14 +238,14 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ summary, projectNam
               <div className="flex justify-between mb-1">
                 <span className="text-sm opacity-90">Completado</span>
                 <span className="text-sm font-semibold">
-                  {formatPercentage(summary.assembledScaffolds, summary.totalScaffolds)}
+                  {`${summary.completionPercentage ?? summary.avgProgress}%`}
                 </span>
               </div>
               <div className="w-full bg-white/20 rounded-full h-2">
                 <div
                   className="bg-white h-2 rounded-full transition-all duration-500"
                   style={{
-                    width: formatPercentage(summary.assembledScaffolds, summary.totalScaffolds),
+                    width: `${Math.max(0, Math.min(100, summary.completionPercentage ?? summary.avgProgress))}%`,
                   }}
                 />
               </div>

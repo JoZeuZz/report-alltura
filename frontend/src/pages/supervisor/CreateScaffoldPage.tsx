@@ -11,6 +11,13 @@ import {
   ALLOWED_IMAGE_ACCEPT,
 } from '../../utils/imageProcessing';
 
+interface ScaffoldSectionForm {
+  id: string;
+  height: string;
+  width: string;
+  length: string;
+}
+
 /**
  * Página para crear un nuevo andamio
  * Incluye todos los campos necesarios: dimensiones, área, TAG, ubicación, etc.
@@ -28,12 +35,13 @@ const CreateScaffoldPage: React.FC = () => {
   const [uploadStage, setUploadStage] = useState<UploadStage>('idle');
 
   // Estados del formulario
-  const [scaffoldNumber, setScaffoldNumber] = useState<string>('');
+  const [permitNumber, setPermitNumber] = useState<string>('');
   const [area, setArea] = useState<string>('');
   const [tag, setTag] = useState<string>('');
   const [height, setHeight] = useState<string>('');
   const [width, setWidth] = useState<string>('');
   const [length, setLength] = useState<string>('');
+  const [sections, setSections] = useState<ScaffoldSectionForm[]>([]);
   const [progressPercentage, setProgressPercentage] = useState<number>(100);
   const [location, setLocation] = useState<string>('');
   const [observations, setObservations] = useState<string>('');
@@ -46,13 +54,54 @@ const CreateScaffoldPage: React.FC = () => {
   const uploadControllerRef = useRef<AbortController | null>(null);
   const isSubmitting = uploadStage !== 'idle' || isProcessingImage;
 
-  // Calcular metros cúbicos automáticamente
+  // Calcular metros cúbicos totales automáticamente
   useEffect(() => {
     const h = parseFloat(height) || 0;
     const w = parseFloat(width) || 0;
     const l = parseFloat(length) || 0;
-    setCubicMeters((h * w * l).toFixed(2));
-  }, [height, width, length]);
+    const mainSection = h * w * l;
+    const extraSections = sections.reduce((total, section) => {
+      const sectionHeight = parseFloat(section.height) || 0;
+      const sectionWidth = parseFloat(section.width) || 0;
+      const sectionLength = parseFloat(section.length) || 0;
+      return total + sectionHeight * sectionWidth * sectionLength;
+    }, 0);
+
+    setCubicMeters((mainSection + extraSections).toFixed(2));
+  }, [height, width, length, sections]);
+
+  const handleAddSection = () => {
+    setSections((current) => [
+      ...current,
+      {
+        id: `${Date.now()}-${Math.random()}`,
+        height: '',
+        width: '',
+        length: '',
+      },
+    ]);
+  };
+
+  const handleRemoveSection = (sectionId: string) => {
+    setSections((current) => current.filter((section) => section.id !== sectionId));
+  };
+
+  const handleSectionChange = (
+    sectionId: string,
+    field: 'height' | 'width' | 'length',
+    value: string
+  ) => {
+    setSections((current) =>
+      current.map((section) =>
+        section.id === sectionId
+          ? {
+              ...section,
+              [field]: value,
+            }
+          : section
+      )
+    );
+  };
 
   const handleImageChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -78,6 +127,11 @@ const CreateScaffoldPage: React.FC = () => {
       return false;
     }
 
+    if (!permitNumber.trim()) {
+      toast.error('El N° de permiso es obligatorio.');
+      return false;
+    }
+
     // Validar dimensiones
     const h = parseFloat(height);
     const w = parseFloat(width);
@@ -95,6 +149,23 @@ const CreateScaffoldPage: React.FC = () => {
       toast.error('El largo debe estar entre 0 y 100 metros');
       return false;
     }
+
+    for (let i = 0; i < sections.length; i += 1) {
+      const section = sections[i];
+      const sectionHeight = parseFloat(section.height);
+      const sectionWidth = parseFloat(section.width);
+      const sectionLength = parseFloat(section.length);
+
+      if (
+        !sectionHeight || sectionHeight <= 0 || sectionHeight > 100 ||
+        !sectionWidth || sectionWidth <= 0 || sectionWidth > 100 ||
+        !sectionLength || sectionLength <= 0 || sectionLength > 100
+      ) {
+        toast.error(`La sección ${i + 2} debe tener dimensiones entre 0 y 100 metros`);
+        return false;
+      }
+    }
+
     return true;
   };
 
@@ -106,6 +177,22 @@ const CreateScaffoldPage: React.FC = () => {
     }
 
     const formData = new FormData(e.currentTarget);
+
+    const normalizedSections = [
+      {
+        height: Number(height),
+        width: Number(width),
+        length: Number(length),
+      },
+      ...sections.map((section) => ({
+        height: Number(section.height),
+        width: Number(section.width),
+        length: Number(section.length),
+      })),
+    ];
+
+    formData.set('sections', JSON.stringify(normalizedSections));
+
     if (image) {
       formData.set('assembly_image', image);
     }
@@ -296,17 +383,18 @@ const CreateScaffoldPage: React.FC = () => {
             {/* Información del Andamio */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label htmlFor="scaffoldNumber" className="block text-sm font-medium text-gray-700 mb-1">
-                  N° de Andamio
+                <label htmlFor="permitNumber" className="block text-sm font-medium text-gray-700 mb-1">
+                  N° de Permiso <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
-                  id="scaffoldNumber"
-                  name="scaffold_number"
-                  value={scaffoldNumber}
-                  onChange={(e) => setScaffoldNumber(e.target.value)}
+                  id="permitNumber"
+                  name="permit_number"
+                  value={permitNumber}
+                  onChange={(e) => setPermitNumber(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
-                  placeholder="Ej: A-001"
+                  placeholder="Ej: PERM-2026-001"
+                  required
                 />
               </div>
 
@@ -344,7 +432,7 @@ const CreateScaffoldPage: React.FC = () => {
             {/* Dimensiones */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Dimensiones (metros) <span className="text-red-500">*</span>
+                Dimensiones Sección 1 (Principal) <span className="text-red-500">*</span>
               </label>
               <div className="grid grid-cols-3 gap-4">
                 <div>
@@ -404,12 +492,96 @@ const CreateScaffoldPage: React.FC = () => {
               </div>
             </div>
 
+            {/* Secciones adicionales */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <label className="block text-sm font-medium text-gray-700">
+                  Secciones de Andamio
+                </label>
+                <button
+                  type="button"
+                  onClick={handleAddSection}
+                  className="px-3 py-1.5 bg-primary-blue text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
+                >
+                  + Agregar Sección
+                </button>
+              </div>
+
+              {sections.length === 0 && (
+                <p className="text-sm text-gray-500 bg-gray-50 rounded-lg p-3">
+                  No hay secciones adicionales. La Sección 1 corresponde a las dimensiones principales.
+                </p>
+              )}
+
+              <div className="space-y-3">
+                {sections.map((section, index) => (
+                  <div key={section.id} className="border border-gray-200 rounded-lg p-3 bg-gray-50">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-sm font-semibold text-dark-blue">Sección {index + 2}</p>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveSection(section.id)}
+                        className="text-red-600 hover:text-red-700 text-sm font-medium"
+                      >
+                        Eliminar
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">Alto</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          max="100"
+                          value={section.height}
+                          onChange={(e) => handleSectionChange(section.id, 'height', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-center"
+                          placeholder="0.00"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">Ancho</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          max="100"
+                          value={section.width}
+                          onChange={(e) => handleSectionChange(section.id, 'width', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-center"
+                          placeholder="0.00"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">Largo</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          max="100"
+                          value={section.length}
+                          onChange={(e) => handleSectionChange(section.id, 'length', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-center"
+                          placeholder="0.00"
+                          required
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             {/* Metros Cúbicos Calculados */}
             <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-blue-800">Volumen Calculado</p>
-                  <p className="text-xs text-blue-600">Alto × Ancho × Largo</p>
+                  <p className="text-sm font-medium text-blue-800">Volumen Total Calculado</p>
+                  <p className="text-xs text-blue-600">Suma de todas las secciones</p>
                 </div>
                 <p className="text-3xl font-bold text-blue-800">
                   {cubicMeters} <span className="text-lg font-medium">m³</span>
@@ -491,7 +663,11 @@ const CreateScaffoldPage: React.FC = () => {
             <div className="flex justify-end space-x-3 pt-4 border-t">
               <button
                 type="button"
-                onClick={() => navigate(`/supervisor/project/${projectId}`)}
+                onClick={() =>
+                  navigate(
+                    isAdmin ? `/admin/scaffolds?projectId=${projectId}` : `/supervisor/project/${projectId}`
+                  )
+                }
                 className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium"
                 disabled={isSubmitting}
               >

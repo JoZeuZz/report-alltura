@@ -22,6 +22,27 @@ class ProjectService {
   // VALIDACIONES DE NEGOCIO
   // ============================================
 
+  static normalizeProjectData(projectData) {
+    const normalized = { ...projectData };
+
+    if (normalized.contract_code !== undefined) {
+      const rawCode = String(normalized.contract_code || '').trim();
+      normalized.contract_code = rawCode.length > 0 ? rawCode : null;
+    }
+
+    if (normalized.contracted_cubic_meters !== undefined) {
+      const parsed = Number(normalized.contracted_cubic_meters);
+      if (!Number.isFinite(parsed) || parsed < 0) {
+        const error = new Error('Los m3 contratados deben ser un número mayor o igual a 0');
+        error.statusCode = 400;
+        throw error;
+      }
+      normalized.contracted_cubic_meters = parsed;
+    }
+
+    return normalized;
+  }
+
   /**
    * Validar que un usuario sea de tipo client y pertenezca a la empresa correcta
    * @param {number} userId - ID del usuario
@@ -170,7 +191,8 @@ class ProjectService {
    * @returns {Promise<object>} Proyecto creado
    */
   static async createProject(projectData) {
-    const newProject = await Project.create(projectData);
+    const normalizedProjectData = this.normalizeProjectData(projectData);
+    const newProject = await Project.create(normalizedProjectData);
     logger.info(`Proyecto ${newProject.id} creado: ${newProject.name}`);
     
     // Notificar al supervisor si fue asignado al crear el proyecto
@@ -208,7 +230,8 @@ class ProjectService {
    * @returns {Promise<object|null>} Proyecto actualizado o null si no existe
    */
   static async updateProject(projectId, projectData) {
-    const updatedProject = await Project.update(projectId, projectData);
+    const normalizedProjectData = this.normalizeProjectData(projectData);
+    const updatedProject = await Project.update(projectId, normalizedProjectData);
     
     if (!updatedProject) {
       const error = new Error('Project not found');

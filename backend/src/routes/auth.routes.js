@@ -19,6 +19,14 @@ const { email, password, personName, rut, phoneNumber, userRole } = require('../
 
 const router = express.Router();
 
+const parsePositiveInt = (value, fallback) => {
+  const parsed = parseInt(value, 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return fallback;
+  }
+  return parsed;
+};
+
 // ============================================
 // RATE LIMITING (Protección contra Brute Force)
 // ============================================
@@ -26,12 +34,22 @@ const router = express.Router();
 // Limitar intentos de login: 30 intentos cada 15 minutos en producción
 // (aumentado de 5 para evitar falsos positivos con flujo normal de uso)
 const authLimiter = rateLimit({
-  windowMs: process.env.NODE_ENV === 'production' ? 15 * 60 * 1000 : 60 * 1000,
-  max: process.env.NODE_ENV === 'production' ? 30 : 100,
+  windowMs:
+    process.env.NODE_ENV === 'production'
+      ? parsePositiveInt(process.env.AUTH_RATE_LIMIT_WINDOW_MS, 15 * 60 * 1000)
+      : 60 * 1000,
+  max:
+    process.env.NODE_ENV === 'production'
+      ? parsePositiveInt(process.env.AUTH_RATE_LIMIT_MAX, 120)
+      : 200,
   message: 'Demasiados intentos de inicio de sesión desde esta IP, intenta de nuevo en 15 minutos.',
   standardHeaders: true,
   legacyHeaders: false,
   skipSuccessfulRequests: true, // No contar intentos exitosos
+  keyGenerator: (req) => {
+    const email = typeof req.body?.email === 'string' ? req.body.email.toLowerCase().trim() : 'unknown';
+    return `${req.ip}:${email}`;
+  },
 });
 
 // ============================================

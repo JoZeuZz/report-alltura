@@ -384,6 +384,8 @@ async function projectsPageAction({ request }: ActionFunctionArgs) {
         const projectData = {
           name: formData.get('name'),
           client_id: Number(formData.get('client_id')),
+          contract_code: formData.get('contract_code') || null,
+          contracted_cubic_meters: Number(formData.get('contracted_cubic_meters') || 0),
           status: formData.get('status'),
           assigned_supervisor_id: formData.get('assigned_supervisor_id') 
             ? Number(formData.get('assigned_supervisor_id')) 
@@ -404,6 +406,8 @@ async function projectsPageAction({ request }: ActionFunctionArgs) {
         const projectData = {
           name: formData.get('name'),
           client_id: Number(formData.get('client_id')),
+          contract_code: formData.get('contract_code') || null,
+          contracted_cubic_meters: Number(formData.get('contracted_cubic_meters') || 0),
           status: formData.get('status'),
           assigned_supervisor_id: formData.get('assigned_supervisor_id') 
             ? Number(formData.get('assigned_supervisor_id')) 
