@@ -32,7 +32,6 @@ interface ColumnDef {
 
 const COLUMNS: ColumnDef[] = [
   { key: 'permit_number',       label: 'Nº Permiso',      defaultWidth: 120, align: 'left',  sortable: true  },
-  { key: 'scaffold_number',     label: 'Nº Andamio',      defaultWidth: 130, align: 'left',  sortable: true  },
   { key: 'area',                label: 'Área',             defaultWidth: 90,  align: 'left',  sortable: true  },
   { key: 'tag',                 label: 'TAG',              defaultWidth: 80,  align: 'left',  sortable: true  },
   { key: 'assembly_status',     label: 'Estado Armado',    defaultWidth: 120, align: 'left',  sortable: true  },
@@ -52,7 +51,7 @@ const COLUMNS: ColumnDef[] = [
   { key: 'disassembly_notes',   label: 'Notas Desarmado',  defaultWidth: 200, align: 'left',  sortable: false, truncate: true },
 ];
 
-const NUM_COL_WIDTH = 48;  // ancho fijo de la columna "#"
+const NUM_COL_WIDTH = 72;  // ancho fijo de la columna "#" (N° andamio)
 const COL_MIN_WIDTH = 60;  // ancho mínimo al hacer resize
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -246,10 +245,10 @@ const ScaffoldTableView: React.FC<ScaffoldTableViewProps> = ({
           {/* THEAD sticky */}
           <thead className="sticky top-0 z-10">
             <tr className="bg-slate-100 text-slate-700">
-              {/* Columna # */}
+              {/* Columna # (N° andamio) */}
               <th
                 scope="col"
-                aria-label="Número de fila"
+                aria-label="Número de andamio"
                 className="sticky left-0 z-20 bg-slate-100 px-2 py-2.5 text-center font-semibold whitespace-nowrap border-r border-slate-300 text-xs"
                 style={{ width: NUM_COL_WIDTH, minWidth: NUM_COL_WIDTH }}
               >
@@ -301,7 +300,7 @@ const ScaffoldTableView: React.FC<ScaffoldTableViewProps> = ({
                 </td>
               </tr>
             ) : (
-              sortedScaffolds.map((scaffold, index) => {
+              sortedScaffolds.map((scaffold) => {
                 const asmBadge = assemblyBadge[scaffold.assembly_status] ?? {
                   label: scaffold.assembly_status,
                   classes: 'bg-gray-100 text-gray-700',
@@ -319,7 +318,7 @@ const ScaffoldTableView: React.FC<ScaffoldTableViewProps> = ({
                     tabIndex={0}
                     className="bg-white cursor-pointer border-b border-gray-100 hover:bg-slate-50 transition-colors group"
                   >
-                    {/* Columna # — borde izquierdo de color indica estado */}
+                    {/* Columna # — muestra N° andamio y borde izquierdo por estado */}
                     <td
                       className={[
                         'sticky left-0 z-10 px-2 py-2 text-center font-medium text-gray-400',
@@ -330,17 +329,12 @@ const ScaffoldTableView: React.FC<ScaffoldTableViewProps> = ({
                       ].join(' ')}
                       style={{ width: NUM_COL_WIDTH, minWidth: NUM_COL_WIDTH }}
                     >
-                      {index + 1}
+                      {scaffold.scaffold_number || scaffold.id}
                     </td>
 
                     {/* Nº Permiso */}
                     <td className="px-3 py-2 whitespace-nowrap border-r border-gray-100 overflow-hidden text-ellipsis">
                       {scaffold.permit_number || '—'}
-                    </td>
-
-                    {/* Nº Andamio */}
-                    <td className="px-3 py-2 whitespace-nowrap border-r border-gray-100 overflow-hidden text-ellipsis">
-                      {scaffold.scaffold_number || `#${scaffold.id}`}
                     </td>
 
                     {/* Área */}
