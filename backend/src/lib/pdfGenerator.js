@@ -308,7 +308,7 @@ async function generateScaffoldsPDF(project, scaffolds, res, _filters = {}) {
       width: doc.page.width 
     });
 
-  // ==================== PÁGINA DE RESUMEN EJECUTIVO ====================
+  // ==================== PÁGINA DE RESUMEN ====================
   doc.addPage();
   addProfessionalHeader(doc, logoWhitePath, logoWhiteExists);
 
@@ -317,7 +317,7 @@ async function generateScaffoldsPDF(project, scaffolds, res, _filters = {}) {
     .fontSize(24)
     .font('Helvetica-Bold')
     .fillColor(COLORS.primary)
-    .text('RESUMEN EJECUTIVO', 50, 120);
+    .text('RESUMEN', 50, 120);
 
   doc
     .strokeColor(COLORS.accent)
@@ -378,7 +378,7 @@ async function generateScaffoldsPDF(project, scaffolds, res, _filters = {}) {
   // Porcentaje de andamios con tarjeta verde (seguridad)
   const greenPercentage = stats.assembled > 0 ? (stats.greenCards / stats.assembled * 100) : 0;
   drawProgressBar(doc, 50, indicatorY, barWidth, 35,
-    greenPercentage, 'Andamios Seguros (Tarjeta Verde)', COLORS.accent);
+    greenPercentage, 'Andamios Tarjeta Verde', COLORS.accent);
 
   // Porcentaje de andamios armados
   const assembledPercentage = stats.total > 0 ? (stats.assembled / stats.total * 100) : 0;
@@ -419,7 +419,8 @@ async function generateScaffoldsPDF(project, scaffolds, res, _filters = {}) {
 
   const imageCache = new Map();
 
-  for (const [index, scaffold] of scaffolds.entries()) {
+  for (let index = 0; index < scaffolds.length; index += 1) {
+    const scaffold = scaffolds[index];
     let cardHeight = 185;
     const notesCount = (scaffold.assembly_notes ? 1 : 0) + (scaffold.disassembly_notes ? 1 : 0);
     if (notesCount > 0) {
@@ -449,7 +450,8 @@ async function generateScaffoldsPDF(project, scaffolds, res, _filters = {}) {
 
     currentY += cardHeight + 18;
 
-    if (scaffold.assembly_image_url || scaffold.disassembly_image_url) {
+    const hasEvidenceImages = Boolean(scaffold.assembly_image_url || scaffold.disassembly_image_url);
+    if (hasEvidenceImages) {
       await drawScaffoldImagesPage(
         doc,
         scaffold,
@@ -458,6 +460,13 @@ async function generateScaffoldsPDF(project, scaffolds, res, _filters = {}) {
         logoWhitePath,
         logoWhiteExists
       );
+
+      const hasMoreScaffolds = index < scaffolds.length - 1;
+      if (hasMoreScaffolds) {
+        doc.addPage();
+        addProfessionalHeader(doc, logoWhitePath, logoWhiteExists);
+        currentY = 120;
+      }
     }
   }
 
@@ -701,7 +710,6 @@ function addSignaturePage(doc, issueDate, project, logoWhitePath, logoWhiteExist
     .font('Helvetica-Bold')
     .fillColor(COLORS.text)
     .text('Supervisor de Obra', leftX, baseY + 70, { width: lineWidth, align: 'center' });
-
   doc
     .strokeColor(COLORS.border)
     .lineWidth(1)
@@ -713,13 +721,6 @@ function addSignaturePage(doc, issueDate, project, logoWhitePath, logoWhiteExist
     .font('Helvetica-Bold')
     .fillColor(COLORS.text)
     .text('Cliente / Mandante', rightX, baseY + 70, { width: lineWidth, align: 'center' });
-
-  doc
-    .fontSize(10)
-    .font('Helvetica')
-    .fillColor(COLORS.textLight)
-    .text('Firma:', 50, doc.page.height - 95);
-
   doc
     .strokeColor(COLORS.border)
     .lineWidth(1)
