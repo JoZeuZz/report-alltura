@@ -32,7 +32,7 @@ interface ColumnDef {
 
 const COLUMNS: ColumnDef[] = [
   { key: 'permit_number',       label: 'Nº Permiso',      defaultWidth: 120, align: 'left',  sortable: true  },
-  { key: 'scaffold_number',     label: 'Nº Andamio Auto', defaultWidth: 130, align: 'left',  sortable: true  },
+  { key: 'scaffold_number',     label: 'Nº Andamio',      defaultWidth: 130, align: 'left',  sortable: true  },
   { key: 'area',                label: 'Área',             defaultWidth: 90,  align: 'left',  sortable: true  },
   { key: 'tag',                 label: 'TAG',              defaultWidth: 80,  align: 'left',  sortable: true  },
   { key: 'assembly_status',     label: 'Estado Armado',    defaultWidth: 120, align: 'left',  sortable: true  },
@@ -331,6 +331,11 @@ const ScaffoldTableView: React.FC<ScaffoldTableViewProps> = ({
                       style={{ width: NUM_COL_WIDTH, minWidth: NUM_COL_WIDTH }}
                     >
                       {index + 1}
+                    </td>
+
+                    {/* Nº Permiso */}
+                    <td className="px-3 py-2 whitespace-nowrap border-r border-gray-100 overflow-hidden text-ellipsis">
+                      {scaffold.permit_number || '—'}
                     </td>
 
                     {/* Nº Andamio */}

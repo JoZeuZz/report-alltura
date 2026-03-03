@@ -17,6 +17,7 @@ import {
   ImageProcessingResult,
   ALLOWED_IMAGE_ACCEPT,
 } from '../../utils/imageProcessing';
+import { formatFixedNumber } from '../../utils/format';
 
 // Alertas inteligentes deshabilitadas temporalmente
 
@@ -862,11 +863,11 @@ const ScaffoldsPage: React.FC = () => {
             </div>
             <div className="bg-blue-50 rounded-lg p-2.5 md:p-3 border-l-4 border-blue-500">
               <p className="text-xs text-blue-700 mb-1">Total m³</p>
-              <p className="text-lg md:text-xl font-bold text-blue-600">{stats.totalM3.toFixed(1)}</p>
+              <p className="text-lg md:text-xl font-bold text-blue-600">{formatFixedNumber(stats.totalM3)}</p>
             </div>
             <div className="bg-cyan-50 rounded-lg p-2.5 md:p-3 border-l-4 border-cyan-500">
               <p className="text-xs text-cyan-700 mb-1">m³ Armados</p>
-              <p className="text-lg md:text-xl font-bold text-cyan-600">{stats.assembledM3.toFixed(1)}</p>
+              <p className="text-lg md:text-xl font-bold text-cyan-600">{formatFixedNumber(stats.assembledM3)}</p>
             </div>
             <div className="bg-emerald-50 rounded-lg p-2.5 md:p-3 border-l-4 border-emerald-500">
               <p className="text-xs text-emerald-700 mb-1">🟢 Verdes</p>

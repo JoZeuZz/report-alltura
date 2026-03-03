@@ -3,6 +3,7 @@ import { Link, useLoaderData } from 'react-router-dom';
 import { Scaffold } from '../../types/api';
 import { formatDisplayName } from '../../utils/name';
 import { ResponsiveGrid } from '../../components/layout';
+import { formatCubicMeters } from '../../utils/format';
 
 interface DashboardSummary {
   // Proyectos y clientes
@@ -180,8 +181,7 @@ const RecentReportsTable: React.FC<{ reports: Scaffold[] }> = ({ reports }) => (
 const AdminDashboard: React.FC = () => {
   const { summary } = useLoaderData() as LoaderData;
 
-  const formatNumber = (num: number) => num.toLocaleString('de-DE');
-  const formatM3 = (num: number) => `${formatNumber(num)} m³`;
+  const formatM3 = (num: number) => formatCubicMeters(num);
 
   return (
     <div className="space-y-4 sm:space-y-6">

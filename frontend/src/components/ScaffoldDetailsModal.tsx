@@ -12,6 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import ImageWithFallback from './ImageWithFallback';
 import { buildImageUrl } from '../utils/image';
+import { formatCubicMeters, formatFixedNumber } from '../utils/format';
 
 interface ScaffoldDetailsModalProps {
   scaffold: Scaffold;
@@ -454,7 +455,7 @@ const ScaffoldDetailsModal: React.FC<ScaffoldDetailsModalProps> = ({
             )}
             {scaffold.scaffold_number && (
               <div>
-                <span className="text-gray-600 text-sm">N° de Andamio (automático):</span>
+                <span className="text-gray-600 text-sm">N° de Andamio:</span>
                 <p className="font-semibold">{scaffold.scaffold_number}</p>
               </div>
             )}
@@ -498,19 +499,19 @@ const ScaffoldDetailsModal: React.FC<ScaffoldDetailsModalProps> = ({
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4">
           <div className="text-center p-2 md:p-3 bg-white rounded-lg shadow-sm">
             <p className="text-gray-600 text-xs md:text-sm">Alto</p>
-            <p className="text-xl md:text-2xl font-bold text-primary-blue">{scaffold.height}m</p>
+            <p className="text-xl md:text-2xl font-bold text-primary-blue">{formatFixedNumber(scaffold.height)}m</p>
           </div>
           <div className="text-center p-2 md:p-3 bg-white rounded-lg shadow-sm">
             <p className="text-gray-600 text-xs md:text-sm">Ancho</p>
-            <p className="text-xl md:text-2xl font-bold text-primary-blue">{scaffold.width}m</p>
+            <p className="text-xl md:text-2xl font-bold text-primary-blue">{formatFixedNumber(scaffold.width)}m</p>
           </div>
           <div className="text-center p-2 md:p-3 bg-white rounded-lg shadow-sm">
             <p className="text-gray-600 text-xs md:text-sm">Largo</p>
-            <p className="text-xl md:text-2xl font-bold text-primary-blue">{scaffold.length}m</p>
+            <p className="text-xl md:text-2xl font-bold text-primary-blue">{formatFixedNumber(scaffold.length)}m</p>
           </div>
           <div className="text-center p-2 md:p-3 bg-white rounded-lg shadow-sm">
             <p className="text-gray-600 text-xs md:text-sm">Volumen Base</p>
-            <p className="text-xl md:text-2xl font-bold text-primary-blue">{scaffold.cubic_meters} m³</p>
+            <p className="text-xl md:text-2xl font-bold text-primary-blue">{formatCubicMeters(scaffold.cubic_meters)}</p>
           </div>
         </div>
 
@@ -522,9 +523,9 @@ const ScaffoldDetailsModal: React.FC<ScaffoldDetailsModalProps> = ({
                 <div key={section.id} className="flex flex-wrap items-center justify-between text-sm bg-gray-50 rounded px-3 py-2">
                   <span className="font-medium text-gray-700">Sección {section.section_order}</span>
                   <span className="text-gray-600">
-                    {section.height} × {section.width} × {section.length} m
+                    {formatFixedNumber(section.height)} × {formatFixedNumber(section.width)} × {formatFixedNumber(section.length)} m
                   </span>
-                  <span className="font-semibold text-primary-blue">{section.cubic_meters} m³</span>
+                  <span className="font-semibold text-primary-blue">{formatCubicMeters(section.cubic_meters)}</span>
                 </div>
               ))}
             </div>
@@ -537,16 +538,16 @@ const ScaffoldDetailsModal: React.FC<ScaffoldDetailsModalProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-center">
               <div>
                 <p className="text-xs text-gray-600">m³ Base</p>
-                <p className="text-lg font-bold text-gray-700">{parseFloat(String(scaffold.cubic_meters)).toFixed(2)} m³</p>
+                <p className="text-lg font-bold text-gray-700">{formatCubicMeters(scaffold.cubic_meters)}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-600">m³ Adicionales</p>
-                <p className="text-lg font-bold text-blue-600">+{totalAdditionalCubicMeters.toFixed(2)} m³</p>
+                <p className="text-lg font-bold text-blue-600">+{formatFixedNumber(totalAdditionalCubicMeters)} m³</p>
               </div>
               <div className="md:col-span-1">
                 <p className="text-xs text-gray-600">Total m³</p>
                 <p className="text-2xl font-bold text-blue-700">
-                  {(parseFloat(String(scaffold.cubic_meters)) + totalAdditionalCubicMeters).toFixed(2)} m³
+                  {formatCubicMeters((parseFloat(String(scaffold.cubic_meters)) || 0) + totalAdditionalCubicMeters)}
                 </p>
               </div>
             </div>

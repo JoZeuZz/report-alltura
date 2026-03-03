@@ -5,6 +5,7 @@ import { useGet } from '../hooks/useGet';
 import { formatDisplayName } from '../utils/name';
 import { buildImageUrl } from '../utils/image';
 import ImageWithFallback from '../components/ImageWithFallback';
+import { formatCubicMeters } from '../utils/format';
 
 const ReportViewerPage: React.FC = () => {
   const [selectedProjectId, setSelectedProjectId] = useState('');
@@ -141,7 +142,7 @@ const ReportViewerPage: React.FC = () => {
                   className="h-48 w-full object-cover"
                 />
                 <div className="p-4">
-                  <p className="text-lg font-bold text-dark-blue">{report.cubic_meters} m³</p>
+                  <p className="text-lg font-bold text-dark-blue">{formatCubicMeters(report.cubic_meters)}</p>
                   <p className="text-sm text-neutral-gray">
                     {formatDisplayName(report.user_name) || 'N/A'}
                   </p>
@@ -184,7 +185,7 @@ const ReportViewerPage: React.FC = () => {
               />
               <div className="mt-4">
                 <p className="mt-2">
-                  <strong>Metros Cúbicos:</strong> {selectedReport.cubic_meters} m³
+                  <strong>Metros Cúbicos:</strong> {formatCubicMeters(selectedReport.cubic_meters)}
                 </p>
                 <p>
                   <strong>Progreso:</strong> {selectedReport.progress_percentage}%

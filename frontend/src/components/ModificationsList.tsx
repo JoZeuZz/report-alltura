@@ -2,6 +2,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import type { ScaffoldModification } from '../types/scaffoldModifications';
 import { formatDisplayName } from '../utils/name';
+import { formatFixedNumber } from '../utils/format';
 
 interface ModificationsListProps {
   modifications: ScaffoldModification[];
@@ -106,10 +107,10 @@ export default function ModificationsList({
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
                 <span className="text-lg font-semibold text-gray-900">
-                  {mod.height}m × {mod.width}m × {mod.length}m
+                  {formatFixedNumber(mod.height)}m × {formatFixedNumber(mod.width)}m × {formatFixedNumber(mod.length)}m
                 </span>
                 <span className="text-xl font-bold text-blue-600">
-                  = {parseFloat(String(mod.cubic_meters)).toFixed(2)} m³
+                  = {formatFixedNumber(mod.cubic_meters)} m³
                 </span>
                 {getStatusBadge(mod.approval_status)}
               </div>

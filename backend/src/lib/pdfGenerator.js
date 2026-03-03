@@ -352,10 +352,10 @@ async function generateScaffoldsPDF(project, scaffolds, res, _filters = {}) {
   const row2Y = kpiStartY + kpiHeight + kpiGap;
   
   drawModernKPI(doc, 50, row2Y, kpiWidth, kpiHeight,
-    `${stats.totalM3.toFixed(1)}`, 'Total m³', COLORS.secondary, 'cube');
+    `${stats.totalM3.toFixed(2)}`, 'Total m³', COLORS.secondary, 'cube');
   
   drawModernKPI(doc, 50 + kpiWidth + kpiGap, row2Y, kpiWidth, kpiHeight,
-    `${stats.assembledM3.toFixed(1)}`, 'm³ Armados', COLORS.accent, 'cube');
+    `${stats.assembledM3.toFixed(2)}`, 'm³ Armados', COLORS.accent, 'cube');
   
   drawModernKPI(doc, 50 + (kpiWidth + kpiGap) * 2, row2Y, kpiWidth, kpiHeight,
     stats.greenCards.toString(), 'Tarjetas Verdes', '#059669', 'shield');
@@ -779,7 +779,7 @@ function drawSummaryTable(doc, x, y, stats) {
       .fillColor(COLORS.text)
       .text(row.label, x + 16, rowY + 10, { width: colWidth - 26 })
       .text(row.count.toString(), x + colWidth + 10, rowY + 10, { width: colWidth - 20 })
-      .text(`${row.m3.toFixed(1)} m³`, x + colWidth * 2 + 10, rowY + 10, { width: colWidth - 20 })
+      .text(`${row.m3.toFixed(2)} m³`, x + colWidth * 2 + 10, rowY + 10, { width: colWidth - 20 })
       .text(`${percentage}%`, x + colWidth * 3 + 10, rowY + 10, { width: colWidth - 20 });
   });
 }

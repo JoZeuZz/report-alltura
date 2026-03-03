@@ -4,6 +4,7 @@ import Modal from '../components/Modal';
 import ImageWithFallback from '../components/ImageWithFallback';
 import { Project, Scaffold } from '../types/api';
 import { buildImageUrl } from '../utils/image';
+import { formatFixedNumber } from '../utils/format';
 
 type GalleryItemType = 'assembly' | 'disassembly';
 
@@ -291,7 +292,7 @@ const ProjectGalleryPage: React.FC = () => {
                   ? 'En proceso'
                   : 'Desarmado'}
               </span>
-              <span>m³: {selectedItem.scaffold.cubic_meters}</span>
+              <span>m³: {formatFixedNumber(selectedItem.scaffold.cubic_meters)}</span>
             </div>
           </div>
         )}

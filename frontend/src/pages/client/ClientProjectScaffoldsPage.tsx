@@ -9,6 +9,7 @@ import { Project, Scaffold } from '../../types/api';
 import ImageWithFallback from '../../components/ImageWithFallback';
 import { buildImageUrl } from '../../utils/image';
 import { apiService } from '../../services/apiService';
+import { formatCubicMeters } from '../../utils/format';
 
 type ViewMode = 'dashboard' | 'cards' | 'table';
 
@@ -447,7 +448,7 @@ const ClientProjectScaffoldsPage: React.FC = () => {
                         {scaffold.width}m × {scaffold.length}m
                       </p>
                       <p>
-                        <span className="font-semibold">Volumen:</span> {scaffold.cubic_meters} m³
+                        <span className="font-semibold">Volumen:</span> {formatCubicMeters(scaffold.cubic_meters)}
                       </p>
                       {scaffold.assembly_status === 'in_progress' && (
                         <p>
