@@ -4,6 +4,7 @@ const AuthController = require('../controllers/auth.controller');
 const { authMiddleware } = require('../middleware/auth');
 const { passwordValidationMiddleware } = require('../middleware/passwordPolicy');
 const rateLimit = require('express-rate-limit');
+const { ipKeyGenerator } = require('express-rate-limit');
 const { email, password, personName, rut, phoneNumber, userRole } = require('../validation');
 
 /**
@@ -48,7 +49,7 @@ const authLimiter = rateLimit({
   skipSuccessfulRequests: true, // No contar intentos exitosos
   keyGenerator: (req) => {
     const email = typeof req.body?.email === 'string' ? req.body.email.toLowerCase().trim() : 'unknown';
-    return `${req.ip}:${email}`;
+    return `${ipKeyGenerator(req.ip)}:${email}`;
   },
 });
 
