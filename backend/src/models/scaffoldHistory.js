@@ -10,7 +10,7 @@ const ScaffoldHistory = {
    * @param {Object} historyData - Datos del historial
    * @returns {Promise<Object>} - Entrada de historial creada
    */
-  async create(historyData) {
+  async create(historyData, dbClient = db) {
     const {
       scaffold_id,
       user_id,
@@ -46,7 +46,7 @@ const ScaffoldHistory = {
       tag,
     ];
 
-    const { rows } = await db.query(query, values);
+    const { rows } = await dbClient.query(query, values);
     return rows[0];
   },
 

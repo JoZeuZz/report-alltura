@@ -141,8 +141,17 @@ class ProjectService {
     }
 
     if (role === 'client') {
-      // Cliente solo ve proyectos donde está asignado
-      return await Project.getByAssignedClient(userId);
+      // Cliente ve proyectos por asignación directa + asignación legacy en project_users.
+      // Esto evita perder visibilidad cuando hay múltiples usuarios cliente asociados al mismo proyecto.
+      const assignedProjects = await Project.getByAssignedClient(userId);
+      const legacyProjects = await Project.getForUser(userId);
+
+      const allProjects = [...assignedProjects, ...legacyProjects];
+      const uniqueProjects = allProjects.filter((project, index, self) =>
+        index === self.findIndex((p) => p.id === project.id)
+      );
+
+      return uniqueProjects;
     }
 
     const error = new Error('Rol no autorizado.');

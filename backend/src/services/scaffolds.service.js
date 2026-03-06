@@ -19,6 +19,12 @@ const db = require('../db');
  * PROHIBIDO: No debe contener objetos req o res
  */
 class ScaffoldService {
+  static NUMERIC_SCAFFOLD_ORDER_SQL = `
+    CASE WHEN scaffold_number ~ '^[0-9]+$' THEN scaffold_number::int ELSE 2147483647 END,
+    assembly_created_at ASC,
+    id ASC
+  `;
+
   // ============================================
   // UTILIDADES DE IMÁGENES
   // ============================================
@@ -322,8 +328,14 @@ class ScaffoldService {
     }
 
     if (role === 'client') {
-      const projects = await Project.getByAssignedClient(userId);
-      const projectIds = projects.map((p) => p.id);
+      const [assignedProjects, legacyProjects] = await Promise.all([
+        Project.getByAssignedClient(userId),
+        Project.getForUser(userId),
+      ]);
+
+      const projectIds = [...assignedProjects, ...legacyProjects]
+        .map((p) => p.id)
+        .filter((id, index, self) => self.indexOf(id) === index);
 
       const allScaffolds = [];
       for (const projectId of projectIds) {
@@ -481,7 +493,16 @@ class ScaffoldService {
         [scaffoldData.project_id]
       );
 
-      const nextScaffoldNumber = parseInt(projectCounterRows[0]?.next_scaffold_number, 10) || 1;
+      const { rows: calculatedRows } = await client.query(
+        `SELECT COALESCE(MAX(CASE WHEN scaffold_number ~ '^[0-9]+$' THEN scaffold_number::int ELSE 0 END), 0) + 1 AS calculated_next
+         FROM scaffolds
+         WHERE project_id = $1`,
+        [scaffoldData.project_id]
+      );
+
+      const counterNext = parseInt(projectCounterRows[0]?.next_scaffold_number, 10) || 1;
+      const calculatedNext = parseInt(calculatedRows[0]?.calculated_next, 10) || 1;
+      const nextScaffoldNumber = Math.max(counterNext, calculatedNext);
 
       scaffold = await Scaffold.create(
         {
@@ -844,28 +865,81 @@ class ScaffoldService {
       throw error;
     }
 
-    // Obtener proyecto para historial
-    const project = await Project.getById(scaffold.project_id);
+    const client = await db.pool.connect();
 
-    // Registrar eliminación ANTES de borrar
-    await ScaffoldHistory.create({
-      scaffold_id: scaffoldId,
-      user_id: user.id,
-      change_type: 'delete',
-      previous_data: scaffold,
-      new_data: {},
-      description: 'Andamio eliminado del sistema',
-      scaffold_number: scaffold.scaffold_number,
-      project_name: project?.name,
-      area: scaffold.area,
-      tag: scaffold.tag,
-    });
+    try {
+      await client.query('BEGIN');
 
-    // Eliminar imágenes del servidor
-    await this._deleteScaffoldImages(scaffold);
+      // Bloquear el proyecto para serializar delete/create por proyecto.
+      await client.query('SELECT id FROM projects WHERE id = $1 FOR UPDATE', [scaffold.project_id]);
 
-    // Eliminar andamio de la base de datos
-    await db.query('DELETE FROM scaffolds WHERE id = $1', [scaffoldId]);
+      // Obtener proyecto dentro de la transacción para historial.
+      const { rows: projectRows } = await client.query('SELECT id, name FROM projects WHERE id = $1', [
+        scaffold.project_id,
+      ]);
+      const project = projectRows[0];
+
+      // Registrar eliminación ANTES de borrar (historial denormalizado se conserva).
+      await ScaffoldHistory.create({
+        scaffold_id: scaffoldId,
+        user_id: user.id,
+        change_type: 'delete',
+        previous_data: scaffold,
+        new_data: {},
+        description: 'Andamio eliminado del sistema',
+        scaffold_number: scaffold.scaffold_number,
+        project_name: project?.name,
+        area: scaffold.area,
+        tag: scaffold.tag,
+      }, client);
+
+      // Eliminar andamio de la base de datos.
+      await client.query('DELETE FROM scaffolds WHERE id = $1', [scaffoldId]);
+
+      // Renumerar correlativamente 1..N dentro del proyecto y actualizar contador siguiente.
+      await client.query(
+        `WITH ordered_scaffolds AS (
+           SELECT
+             id,
+             ROW_NUMBER() OVER (ORDER BY ${this.NUMERIC_SCAFFOLD_ORDER_SQL}) AS new_number
+           FROM scaffolds
+           WHERE project_id = $1
+         )
+         UPDATE scaffolds s
+         SET scaffold_number = ordered_scaffolds.new_number::text
+         FROM ordered_scaffolds
+         WHERE s.id = ordered_scaffolds.id`,
+        [scaffold.project_id]
+      );
+
+      const { rows: countRows } = await client.query(
+        'SELECT COUNT(*)::int AS total FROM scaffolds WHERE project_id = $1',
+        [scaffold.project_id]
+      );
+      const totalScaffolds = countRows[0]?.total || 0;
+
+      await client.query(
+        'UPDATE projects SET next_scaffold_number = $1 WHERE id = $2',
+        [totalScaffolds + 1, scaffold.project_id]
+      );
+
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+
+    // Eliminar imágenes fuera de transacción para no comprometer consistencia de datos.
+    try {
+      await this._deleteScaffoldImages(scaffold);
+    } catch (error) {
+      logger.warn('No se pudieron eliminar todas las imágenes del andamio tras el borrado', {
+        scaffoldId,
+        error: error.message,
+      });
+    }
 
     logger.info(`Andamio ${scaffoldId} eliminado por admin ${user.id}`);
   }
