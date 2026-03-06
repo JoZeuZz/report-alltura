@@ -342,7 +342,9 @@ const ClientProjectScaffoldsPage: React.FC = () => {
             />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {filteredScaffolds.map((scaffold) => (
+              {filteredScaffolds.map((scaffold) => {
+                const displayScaffoldNumber = scaffold.scaffold_number || scaffold.id;
+                return (
                 <div
                   key={scaffold.id}
                   onClick={() => setSelectedScaffold(scaffold)}
@@ -352,7 +354,7 @@ const ClientProjectScaffoldsPage: React.FC = () => {
                   <div className="relative h-48 bg-gray-200">
                     <ImageWithFallback
                       src={buildImageUrl(scaffold.assembly_image_url || '/placeholder-scaffold.png', 'thumb')}
-                      alt={`Andamio #${scaffold.id}`}
+                      alt={`Andamio #${displayScaffoldNumber}`}
                       className="w-full h-full object-cover"
                     />
                     {/* Badge de estado de ensamblaje */}
@@ -398,7 +400,7 @@ const ClientProjectScaffoldsPage: React.FC = () => {
                   <div className="p-4">
                     <div className="flex items-start justify-between mb-3">
                       <h3 className="text-lg font-bold text-dark-blue">
-                        Andamio #{scaffold.id}
+                        Andamio #{displayScaffoldNumber}
                       </h3>
                     </div>
                     
@@ -463,7 +465,8 @@ const ClientProjectScaffoldsPage: React.FC = () => {
                     </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </>
