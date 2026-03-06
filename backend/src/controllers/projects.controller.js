@@ -239,19 +239,13 @@ class ProjectController {
   static async generatePDFReport(req, res, next) {
     try {
       const { id } = req.params;
-      const userId = req.user.id;
-      const userRole = req.user.role;
       
       // Validar acceso al proyecto
       const project = await ProjectService.getProjectById(parseInt(id));
       if (!project) {
         return res.status(404).json({ message: 'Proyecto no encontrado' });
       }
-      
-      // Si no es admin, verificar que sea el cliente asignado al proyecto
-      if (userRole !== 'admin' && project.assigned_client_id !== userId) {
-        return res.status(403).json({ message: 'No tienes permiso para exportar este proyecto' });
-      }
+      // Permisos ya validados por middleware checkProjectAccess en la ruta.
       
       // Extraer filtros de query params
       const filters = {
@@ -280,19 +274,13 @@ class ProjectController {
   static async generateExcelReport(req, res, next) {
     try {
       const { id } = req.params;
-      const userId = req.user.id;
-      const userRole = req.user.role;
       
       // Obtener proyecto para validar acceso y nombre de archivo
       const project = await ProjectService.getProjectById(parseInt(id));
       if (!project) {
         return res.status(404).json({ message: 'Proyecto no encontrado' });
       }
-      
-      // Si no es admin, verificar que sea el cliente asignado al proyecto
-      if (userRole !== 'admin' && project.assigned_client_id !== userId) {
-        return res.status(403).json({ message: 'No tienes permiso para exportar este proyecto' });
-      }
+      // Permisos ya validados por middleware checkProjectAccess en la ruta.
 
       // Generar buffer del Excel
       const buffer = await ProjectService.generateExcelReport(parseInt(id));
