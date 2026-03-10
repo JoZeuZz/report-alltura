@@ -34,8 +34,6 @@ const COLUMNS: ColumnDef[] = [
   { key: 'permit_number',       label: 'Nº Permiso',      defaultWidth: 120, align: 'left',  sortable: true  },
   { key: 'area',                label: 'Área',             defaultWidth: 90,  align: 'left',  sortable: true  },
   { key: 'tag',                 label: 'TAG',              defaultWidth: 80,  align: 'left',  sortable: true  },
-  { key: 'modulation_pdf_url',  label: 'MOD',              defaultWidth: 70,  align: 'center', sortable: false },
-  { key: 'calculation_memory_pdf_url', label: 'MC',        defaultWidth: 70,  align: 'center', sortable: false },
   { key: 'assembly_status',     label: 'Estado Armado',    defaultWidth: 120, align: 'left',  sortable: true  },
   { key: 'card_status',         label: 'Tarjeta',          defaultWidth: 90,  align: 'left',  sortable: true  },
   { key: 'progress_percentage', label: '% Avance',         defaultWidth: 90,  align: 'right', sortable: true,  isNumber: true },
@@ -347,48 +345,6 @@ const ScaffoldTableView: React.FC<ScaffoldTableViewProps> = ({
                     {/* TAG */}
                     <td className="px-3 py-2 whitespace-nowrap border-r border-gray-100 overflow-hidden text-ellipsis">
                       {scaffold.tag || '—'}
-                    </td>
-
-                    {/* MOD */}
-                    <td className="px-3 py-2 whitespace-nowrap border-r border-gray-100 text-center">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (!scaffold.modulation_pdf_url) return;
-                          window.open(scaffold.modulation_pdf_url, '_blank', 'noopener,noreferrer');
-                        }}
-                        disabled={!scaffold.modulation_pdf_url}
-                        className={`h-7 min-w-7 px-2 rounded text-[11px] font-bold border ${
-                          scaffold.modulation_pdf_url
-                            ? 'bg-blue-600 text-white border-blue-700 hover:bg-blue-700'
-                            : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
-                        }`}
-                        title={scaffold.modulation_pdf_url ? 'Abrir Modulación (PDF)' : 'Modulación no disponible'}
-                      >
-                        MOD
-                      </button>
-                    </td>
-
-                    {/* MC */}
-                    <td className="px-3 py-2 whitespace-nowrap border-r border-gray-100 text-center">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (!scaffold.calculation_memory_pdf_url) return;
-                          window.open(scaffold.calculation_memory_pdf_url, '_blank', 'noopener,noreferrer');
-                        }}
-                        disabled={!scaffold.calculation_memory_pdf_url}
-                        className={`h-7 min-w-7 px-2 rounded text-[11px] font-bold border ${
-                          scaffold.calculation_memory_pdf_url
-                            ? 'bg-emerald-600 text-white border-emerald-700 hover:bg-emerald-700'
-                            : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
-                        }`}
-                        title={scaffold.calculation_memory_pdf_url ? 'Abrir Memoria de Cálculo (PDF)' : 'Memoria de Cálculo no disponible'}
-                      >
-                        MC
-                      </button>
                     </td>
 
                     {/* Estado Armado */}
