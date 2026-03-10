@@ -265,6 +265,34 @@ class ScaffoldController {
   }
 
   /**
+   * Subir/actualizar documentos técnicos (MOD y MC) de un andamio
+   * @route PATCH /api/scaffolds/:id/documents
+   */
+  static async updateTechnicalDocuments(req, res, next) {
+    try {
+      const { id } = req.params;
+      const user = req.user;
+      const files = req.files || {};
+
+      const updated = await ScaffoldService.updateTechnicalDocuments(
+        parseInt(id),
+        user,
+        files
+      );
+
+      res.json(updated);
+    } catch (err) {
+      const statusCode = err.statusCode || 500;
+      logger.error(`Error al actualizar documentos técnicos: ${err.message}`, err);
+
+      if (statusCode < 500) {
+        return res.status(statusCode).json({ message: err.message });
+      }
+      next(err);
+    }
+  }
+
+  /**
    * Eliminar un andamio permanentemente (solo admin)
    * @route DELETE /api/scaffolds/:id
    */

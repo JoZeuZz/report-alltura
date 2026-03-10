@@ -64,6 +64,8 @@ CREATE TABLE IF NOT EXISTS scaffolds (
     card_status VARCHAR(50) NOT NULL DEFAULT 'green' CHECK(card_status IN ('green', 'red')),
     assembly_status VARCHAR(50) NOT NULL DEFAULT 'assembled' CHECK(assembly_status IN ('assembled', 'disassembled')),
     assembly_image_url VARCHAR(255) NOT NULL,
+    modulation_pdf_url VARCHAR(500),
+    calculation_memory_pdf_url VARCHAR(500),
     assembly_notes TEXT,
     assembly_created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     location TEXT,

@@ -26,6 +26,8 @@ const Scaffold = {
       progress_percentage,
       assembly_notes,
       assembly_image_url,
+      modulation_pdf_url,
+      calculation_memory_pdf_url,
       card_status = 'red', // Por defecto: tarjeta roja
       assembly_status = 'disassembled', // Por defecto: desarmado
       location,
@@ -36,9 +38,10 @@ const Scaffold = {
       INSERT INTO scaffolds 
         (project_id, user_id, scaffold_number, permit_number, area, tag, 
          height, width, length, cubic_meters, progress_percentage, assembly_notes, 
-         assembly_image_url, card_status, assembly_status, created_by, location, observations)
+         assembly_image_url, modulation_pdf_url, calculation_memory_pdf_url,
+         card_status, assembly_status, created_by, location, observations)
       VALUES 
-        ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+        ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
       RETURNING *
     `;
 
@@ -56,6 +59,8 @@ const Scaffold = {
       progress_percentage,
       assembly_notes,
       assembly_image_url,
+      modulation_pdf_url || null,
+      calculation_memory_pdf_url || null,
       card_status,
       assembly_status,
       user_id, // created_by es el usuario que lo crea
@@ -177,7 +182,8 @@ const Scaffold = {
       'scaffold_number', 'permit_number', 'area', 'tag',
       'height', 'width', 'length', 'cubic_meters', 'progress_percentage', 
       'assembly_notes', 'card_status', 'assembly_status', 'assembly_image_url', 
-      'disassembly_image_url', 'disassembly_notes', 'location', 'observations'
+      'disassembly_image_url', 'disassembly_notes', 'location', 'observations',
+      'modulation_pdf_url', 'calculation_memory_pdf_url'
     ];
 
     allowedFields.forEach((field) => {

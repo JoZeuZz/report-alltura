@@ -116,6 +116,26 @@ export const updateScaffold = (id: number, formData: FormData) =>
   put(`/scaffolds/${id}`, formData);
 
 /**
+ * Sube/actualiza documentos técnicos PDF (MOD y MC) de un andamio.
+ */
+export const uploadScaffoldTechnicalDocuments = (
+  scaffoldId: number,
+  files: { modulationPdf?: File; calculationMemoryPdf?: File },
+  onProgress?: (percentage: number) => void,
+  signal?: AbortSignal
+) => {
+  const formData = new FormData();
+  if (files.modulationPdf) {
+    formData.append('modulation_pdf', files.modulationPdf);
+  }
+  if (files.calculationMemoryPdf) {
+    formData.append('calculation_memory_pdf', files.calculationMemoryPdf);
+  }
+
+  return uploadWithProgress('patch', `/scaffolds/${scaffoldId}/documents`, formData, onProgress, signal);
+};
+
+/**
  * Actualiza el estado de la tarjeta (green/red)
  */
 export const updateCardStatus = (id: number, cardStatus: 'green' | 'red') =>

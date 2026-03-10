@@ -52,6 +52,8 @@ export interface Scaffold {
   created_by_name?: string; // Nuevo: Nombre del usuario que creó el andamio
   // Campos existentes
   assembly_image_url: string; // Mantener por compatibilidad (apuntará a initial_image)
+  modulation_pdf_url?: string | null;
+  calculation_memory_pdf_url?: string | null;
   cubic_meters: number;
   user_name: string;
   assembly_created_at: string;

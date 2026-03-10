@@ -444,6 +444,86 @@ const uploadFile = async (file) => {
 };
 
 /**
+ * Uploads a PDF document to Google Cloud Storage or local storage.
+ * @param {object} file The file object from multer.
+ * @returns {Promise<string>} The public URL of the uploaded document.
+ */
+const uploadDocumentFile = async (file) => {
+  if (!file) {
+    throw new Error('Archivo inválido para carga de documento.');
+  }
+
+  const maxDocumentBytes = parseInt(process.env.DOCUMENT_MAX_BYTES || '20971520', 10); // 20MB default
+  const incomingSize = await getIncomingSize(file);
+  if (maxDocumentBytes > 0 && incomingSize > maxDocumentBytes) {
+    const error = new Error(
+      `El documento supera el tamaño máximo permitido (${Math.round(maxDocumentBytes / (1024 * 1024))} MB).`
+    );
+    error.statusCode = 413;
+    throw error;
+  }
+
+  const mimetype = normalizeMimeType(file.mimetype);
+  if (mimetype && mimetype !== 'application/pdf') {
+    const error = new Error('Solo se permiten archivos PDF.');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const header = await readFileHeader(file, 5);
+  if (!header || header.toString('ascii', 0, 5) !== '%PDF-') {
+    const error = new Error('El archivo no es un PDF válido.');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (resolvedProvider === 'gcs' && !isGCSConfigured) {
+    throw new Error(
+      'Google Cloud Storage no está configurado. Revisa GCS_PROJECT_ID, GCS_BUCKET_NAME y GOOGLE_APPLICATION_CREDENTIALS.'
+    );
+  }
+
+  const filename = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}.pdf`;
+  const sourceStream = file.buffer ? (() => {
+    const pass = new PassThrough();
+    pass.end(file.buffer);
+    return pass;
+  })() : fs.createReadStream(file.path);
+
+  try {
+    if (resolvedProvider === 'local') {
+      if (!fs.existsSync(localUploadsDir)) {
+        fs.mkdirSync(localUploadsDir, { recursive: true });
+      }
+
+      const filePath = path.join(localUploadsDir, filename);
+      await pipeline(sourceStream, fs.createWriteStream(filePath));
+
+      const backendUrl = process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 5000}`;
+      return `${backendUrl}/uploads/${filename}`;
+    }
+
+    const objectName = gcsPrefix ? `${gcsPrefix}/${filename}` : filename;
+    const blob = bucket.file(objectName);
+    const blobStream = blob.createWriteStream({
+      resumable: false,
+      metadata: {
+        contentType: 'application/pdf',
+        cacheControl,
+      },
+    });
+
+    await pipeline(sourceStream, blobStream);
+    return `https://storage.googleapis.com/${bucket.name}/${blob.name}`;
+  } catch (error) {
+    const providerLabel = resolvedProvider === 'local' ? 'local' : 'GCS';
+    throw new Error(`Unable to upload document (${providerLabel}): ${error.message}`);
+  } finally {
+    await cleanupTempFile(file);
+  }
+};
+
+/**
  * Resolve an image URL to a signed URL when using GCS (for private buckets).
  * Falls back to the original URL if signing is not available.
  * @param {string} imageUrl
@@ -539,4 +619,4 @@ const deleteFileByUrl = async (imageUrl) => {
   }
 };
 
-module.exports = { uploadFile, deleteFileByUrl, resolveImageUrl };
+module.exports = { uploadFile, uploadDocumentFile, deleteFileByUrl, resolveImageUrl };

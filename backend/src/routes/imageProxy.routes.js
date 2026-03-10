@@ -141,6 +141,7 @@ router.get('/', async (req, res) => {
         if (extension === '.png') return 'image/png';
         if (extension === '.webp') return 'image/webp';
         if (extension === '.avif') return 'image/avif';
+        if (extension === '.pdf') return 'application/pdf';
         return 'application/octet-stream';
       })();
 

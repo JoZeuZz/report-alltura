@@ -34,6 +34,13 @@ const allowedImageTypes = new Set([
   'image/avif',
 ]);
 
+const DEFAULT_MAX_DOCUMENT_BYTES = 20 * 1024 * 1024;
+const maxDocumentBytesRaw = parseInt(process.env.DOCUMENT_MAX_BYTES || `${DEFAULT_MAX_DOCUMENT_BYTES}`, 10);
+const maxDocumentBytes =
+  Number.isFinite(maxDocumentBytesRaw) && maxDocumentBytesRaw > 0
+    ? maxDocumentBytesRaw
+    : DEFAULT_MAX_DOCUMENT_BYTES;
+
 const normalizeMime = (mime) => {
   if (!mime) return '';
   const lower = mime.toLowerCase();
@@ -129,9 +136,36 @@ const imageUpload = multer({
   fileFilter: imageFileFilter,
 });
 
+const documentFileFilter = (_req, file, cb) => {
+  if (!file || !file.mimetype) {
+    const error = new Error('Archivo inválido. No se pudo determinar el tipo.');
+    error.statusCode = 400;
+    return cb(error, false);
+  }
+
+  if (file.mimetype !== 'application/pdf') {
+    const error = new Error('Solo se permiten archivos PDF.');
+    error.statusCode = 400;
+    return cb(error, false);
+  }
+
+  return cb(null, true);
+};
+
+const pdfUpload = multer({
+  storage: diskStorage,
+  limits: {
+    fileSize: maxDocumentBytes,
+    files: 2,
+  },
+  fileFilter: documentFileFilter,
+});
+
 module.exports = {
   imageUpload,
+  pdfUpload,
   MAX_IMAGE_BYTES: maxImageBytes,
+  MAX_DOCUMENT_BYTES: maxDocumentBytes,
   validateImageMagic: async (req, _res, next) => {
     try {
       const files = [];
@@ -169,6 +203,44 @@ module.exports = {
         if (declared && normalizeMime(declared) !== detected) {
           await safeUnlink(file.path);
           const error = new Error('El tipo de imagen no coincide con el contenido del archivo.');
+          error.statusCode = 400;
+          return next(error);
+        }
+      }
+
+      return next();
+    } catch (error) {
+      return next(error);
+    }
+  },
+  validatePdfMagic: async (req, _res, next) => {
+    try {
+      const files = [];
+      if (req.file) {
+        files.push(req.file);
+      } else if (Array.isArray(req.files)) {
+        files.push(...req.files);
+      } else if (req.files && typeof req.files === 'object') {
+        Object.values(req.files).forEach((fileGroup) => {
+          if (Array.isArray(fileGroup)) {
+            files.push(...fileGroup);
+          } else if (fileGroup) {
+            files.push(fileGroup);
+          }
+        });
+      }
+
+      if (!files.length) {
+        return next();
+      }
+
+      for (const file of files) {
+        if (!file?.path) continue;
+        const buffer = await readMagicBytes(file.path, 5);
+        const signature = buffer.toString('ascii', 0, 5);
+        if (signature !== '%PDF-') {
+          await safeUnlink(file.path);
+          const error = new Error('El archivo no es un PDF válido.');
           error.statusCode = 400;
           return next(error);
         }

@@ -4,7 +4,7 @@ const Joi = require('joi');
 const { authMiddleware } = require('../middleware/auth');
 const { isAdminOrSupervisor, isAdmin, isSupervisor, checkProjectAccess, checkScaffoldAccess } = require('../middleware/roles');
 const { trackScaffoldChanges } = require('../middleware/scaffoldHistory');
-const { imageUpload, validateImageMagic } = require('../middleware/upload');
+const { imageUpload, pdfUpload, validateImageMagic, validatePdfMagic } = require('../middleware/upload');
 const ScaffoldController = require('../controllers/scaffolds.controller');
 const ClientNotesController = require('../controllers/clientNotes.controller');
 const { 
@@ -257,6 +257,23 @@ router.put(
   imageUpload.single('disassembly_image'),
   validateImageMagic,
   ScaffoldController.disassembleScaffold
+);
+
+/**
+ * @route   PATCH /api/scaffolds/:id/documents
+ * @desc    Subir/actualizar documentos técnicos PDF (MOD y MC)
+ * @access  Private (validación de acceso + Admin o Supervisor del proyecto)
+ */
+router.patch(
+  '/:id/documents',
+  checkScaffoldAccess,
+  isAdminOrSupervisor,
+  pdfUpload.fields([
+    { name: 'modulation_pdf', maxCount: 1 },
+    { name: 'calculation_memory_pdf', maxCount: 1 },
+  ]),
+  validatePdfMagic,
+  ScaffoldController.updateTechnicalDocuments
 );
 
 /**

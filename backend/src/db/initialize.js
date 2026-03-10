@@ -338,6 +338,20 @@ const initializeDatabase = async () => {
         END IF;
 
         IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_name = 'scaffolds' AND column_name = 'modulation_pdf_url'
+        ) THEN
+          ALTER TABLE scaffolds ADD COLUMN modulation_pdf_url VARCHAR(500);
+        END IF;
+
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_name = 'scaffolds' AND column_name = 'calculation_memory_pdf_url'
+        ) THEN
+          ALTER TABLE scaffolds ADD COLUMN calculation_memory_pdf_url VARCHAR(500);
+        END IF;
+
+        IF NOT EXISTS (
           SELECT 1 FROM information_schema.columns 
           WHERE table_name = 'scaffold_history' AND column_name = 'scaffold_number'
         ) THEN

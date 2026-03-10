@@ -7,7 +7,7 @@ import ModificationsList from './ModificationsList';
 import ClientNotesList from './ClientNotesList';
 import { useScaffoldModifications } from '../hooks/useScaffoldModifications';
 import { useClientNotes } from '../hooks/useClientNotes';
-import { put } from '../services/apiService';
+import { put, uploadScaffoldTechnicalDocuments } from '../services/apiService';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import ImageWithFallback from './ImageWithFallback';
@@ -40,6 +40,11 @@ const ScaffoldDetailsModal: React.FC<ScaffoldDetailsModalProps> = ({
   const [tempProgress, setTempProgress] = useState(scaffold.progress_percentage);
   const [isUpdating, setIsUpdating] = useState(false);
   const [showAddModificationModal, setShowAddModificationModal] = useState(false);
+  const [modulationPdfUrl, setModulationPdfUrl] = useState<string | null>(scaffold.modulation_pdf_url || null);
+  const [calculationMemoryPdfUrl, setCalculationMemoryPdfUrl] = useState<string | null>(
+    scaffold.calculation_memory_pdf_url || null
+  );
+  const [uploadingDocType, setUploadingDocType] = useState<'modulation' | 'calculation_memory' | null>(null);
   const [activeImageKey, setActiveImageKey] = useState<'assembly' | 'disassembly' | null>(
     scaffold.assembly_image_url ? 'assembly' : scaffold.disassembly_image_url ? 'disassembly' : null
   );
@@ -106,6 +111,11 @@ const ScaffoldDetailsModal: React.FC<ScaffoldDetailsModalProps> = ({
   ].filter((item) => item.url);
 
   useEffect(() => {
+    setModulationPdfUrl(scaffold.modulation_pdf_url || null);
+    setCalculationMemoryPdfUrl(scaffold.calculation_memory_pdf_url || null);
+  }, [scaffold.id, scaffold.modulation_pdf_url, scaffold.calculation_memory_pdf_url]);
+
+  useEffect(() => {
     if (!hasAssemblyImage && !hasDisassemblyImage) {
       setActiveImageKey(null);
       return;
@@ -128,6 +138,35 @@ const ScaffoldDetailsModal: React.FC<ScaffoldDetailsModalProps> = ({
 
   const handleDeleteClick = () => {
     setShowDeleteConfirm(true);
+  };
+
+  const handleTechnicalDocumentUpload = async (
+    type: 'modulation' | 'calculation_memory',
+    file?: File | null
+  ) => {
+    if (!file || !canEdit || isUpdating) return;
+
+    if (file.type !== 'application/pdf') {
+      alert('Solo se permiten archivos PDF.');
+      return;
+    }
+
+    try {
+      setUploadingDocType(type);
+      const updated = await uploadScaffoldTechnicalDocuments(scaffold.id, {
+        modulationPdf: type === 'modulation' ? file : undefined,
+        calculationMemoryPdf: type === 'calculation_memory' ? file : undefined,
+      });
+
+      setModulationPdfUrl(updated?.modulation_pdf_url || null);
+      setCalculationMemoryPdfUrl(updated?.calculation_memory_pdf_url || null);
+      if (onUpdate) onUpdate();
+    } catch (error) {
+      console.error('Error subiendo documento técnico:', error);
+      alert('No se pudo subir el documento. Intenta nuevamente.');
+    } finally {
+      setUploadingDocType(null);
+    }
   };
 
   const handleConfirmDelete = () => {
@@ -782,6 +821,86 @@ const ScaffoldDetailsModal: React.FC<ScaffoldDetailsModalProps> = ({
             ) : (
               <p className="text-sm text-gray-500">No hay archivos adjuntos disponibles.</p>
             )}
+          </div>
+
+          <div className="mt-3 p-3 bg-white rounded border border-gray-200">
+            <h4 className="text-sm font-semibold text-gray-800 mb-2">Documentos técnicos (PDF)</h4>
+            <div className="space-y-2">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border border-gray-200 rounded-md p-2">
+                <div>
+                  <p className="text-sm font-medium text-gray-700">Modulación (MOD)</p>
+                  <p className="text-xs text-gray-500">
+                    {modulationPdfUrl ? 'Documento cargado' : 'No disponible'}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => modulationPdfUrl && window.open(modulationPdfUrl, '_blank', 'noopener,noreferrer')}
+                    disabled={!modulationPdfUrl}
+                    className={`px-3 py-1.5 rounded-md text-xs font-semibold border ${
+                      modulationPdfUrl
+                        ? 'bg-blue-600 text-white border-blue-700 hover:bg-blue-700'
+                        : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                    }`}
+                  >
+                    MOD
+                  </button>
+                  {canEdit && (
+                    <label className="px-3 py-1.5 rounded-md text-xs font-semibold border border-gray-300 bg-white hover:bg-gray-50 cursor-pointer">
+                      {uploadingDocType === 'modulation' ? 'Subiendo...' : 'Subir PDF'}
+                      <input
+                        type="file"
+                        accept="application/pdf"
+                        className="hidden"
+                        onChange={(e) => handleTechnicalDocumentUpload('modulation', e.target.files?.[0])}
+                        disabled={uploadingDocType !== null}
+                      />
+                    </label>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border border-gray-200 rounded-md p-2">
+                <div>
+                  <p className="text-sm font-medium text-gray-700">Memoria de Cálculo (MC)</p>
+                  <p className="text-xs text-gray-500">
+                    {calculationMemoryPdfUrl ? 'Documento cargado' : 'No disponible'}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      calculationMemoryPdfUrl &&
+                      window.open(calculationMemoryPdfUrl, '_blank', 'noopener,noreferrer')
+                    }
+                    disabled={!calculationMemoryPdfUrl}
+                    className={`px-3 py-1.5 rounded-md text-xs font-semibold border ${
+                      calculationMemoryPdfUrl
+                        ? 'bg-emerald-600 text-white border-emerald-700 hover:bg-emerald-700'
+                        : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                    }`}
+                  >
+                    MC
+                  </button>
+                  {canEdit && (
+                    <label className="px-3 py-1.5 rounded-md text-xs font-semibold border border-gray-300 bg-white hover:bg-gray-50 cursor-pointer">
+                      {uploadingDocType === 'calculation_memory' ? 'Subiendo...' : 'Subir PDF'}
+                      <input
+                        type="file"
+                        accept="application/pdf"
+                        className="hidden"
+                        onChange={(e) =>
+                          handleTechnicalDocumentUpload('calculation_memory', e.target.files?.[0])
+                        }
+                        disabled={uploadingDocType !== null}
+                      />
+                    </label>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

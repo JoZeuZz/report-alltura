@@ -406,6 +406,43 @@ const ClientProjectScaffoldsPage: React.FC = () => {
                         Andamio #{displayScaffoldNumber}
                       </h3>
                     </div>
+
+                    <div className="flex items-center gap-2 mb-3">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (!scaffold.modulation_pdf_url) return;
+                          window.open(scaffold.modulation_pdf_url, '_blank', 'noopener,noreferrer');
+                        }}
+                        disabled={!scaffold.modulation_pdf_url}
+                        className={`h-8 min-w-8 px-2 rounded-md text-[11px] font-bold border ${
+                          scaffold.modulation_pdf_url
+                            ? 'bg-blue-600 text-white border-blue-700 hover:bg-blue-700'
+                            : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                        }`}
+                        title={scaffold.modulation_pdf_url ? 'Abrir Modulación (PDF)' : 'Modulación no disponible'}
+                      >
+                        MOD
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (!scaffold.calculation_memory_pdf_url) return;
+                          window.open(scaffold.calculation_memory_pdf_url, '_blank', 'noopener,noreferrer');
+                        }}
+                        disabled={!scaffold.calculation_memory_pdf_url}
+                        className={`h-8 min-w-8 px-2 rounded-md text-[11px] font-bold border ${
+                          scaffold.calculation_memory_pdf_url
+                            ? 'bg-emerald-600 text-white border-emerald-700 hover:bg-emerald-700'
+                            : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                        }`}
+                        title={scaffold.calculation_memory_pdf_url ? 'Abrir Memoria de Cálculo (PDF)' : 'Memoria de Cálculo no disponible'}
+                      >
+                        MC
+                      </button>
+                    </div>
                     
                     {/* Indicadores de estado */}
                     <div className="flex gap-2 mb-3">

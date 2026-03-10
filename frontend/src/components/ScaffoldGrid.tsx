@@ -47,6 +47,44 @@ export default function ScaffoldGrid({
               isSelected ? 'ring-2 ring-primary-blue/70' : ''
             }`}
           >
+            {/* Indicadores de documentos técnicos */}
+            <div className="absolute top-12 right-3 z-10 flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!scaffold.modulation_pdf_url) return;
+                  window.open(scaffold.modulation_pdf_url, '_blank', 'noopener,noreferrer');
+                }}
+                disabled={!scaffold.modulation_pdf_url}
+                className={`h-8 min-w-8 px-2 rounded-md text-[11px] font-bold border backdrop-blur-sm ${
+                  scaffold.modulation_pdf_url
+                    ? 'bg-blue-600 text-white border-blue-700 hover:bg-blue-700'
+                    : 'bg-gray-200/90 text-gray-500 border-gray-300 cursor-not-allowed'
+                }`}
+                title={scaffold.modulation_pdf_url ? 'Abrir Modulación (PDF)' : 'Modulación no disponible'}
+              >
+                MOD
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!scaffold.calculation_memory_pdf_url) return;
+                  window.open(scaffold.calculation_memory_pdf_url, '_blank', 'noopener,noreferrer');
+                }}
+                disabled={!scaffold.calculation_memory_pdf_url}
+                className={`h-8 min-w-8 px-2 rounded-md text-[11px] font-bold border backdrop-blur-sm ${
+                  scaffold.calculation_memory_pdf_url
+                    ? 'bg-emerald-600 text-white border-emerald-700 hover:bg-emerald-700'
+                    : 'bg-gray-200/90 text-gray-500 border-gray-300 cursor-not-allowed'
+                }`}
+                title={scaffold.calculation_memory_pdf_url ? 'Abrir Memoria de Cálculo (PDF)' : 'Memoria de Cálculo no disponible'}
+              >
+                MC
+              </button>
+            </div>
+
             {/* Indicador de tarjeta - Esquina superior izquierda */}
             <div className="absolute top-3 left-3 z-10">
               <div

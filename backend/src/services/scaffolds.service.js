@@ -3,7 +3,7 @@ const ScaffoldHistory = require('../models/scaffoldHistory');
 const ScaffoldModification = require('../models/scaffoldModification');
 const ScaffoldSection = require('../models/scaffoldSection');
 const Project = require('../models/project');
-const { uploadFile, deleteFileByUrl, resolveImageUrl } = require('../lib/googleCloud');
+const { uploadFile, uploadDocumentFile, deleteFileByUrl, resolveImageUrl } = require('../lib/googleCloud');
 const { logger } = require('../lib/logger');
 const db = require('../db');
 
@@ -32,15 +32,19 @@ class ScaffoldService {
   static async _resolveScaffoldImages(scaffold) {
     if (!scaffold) return scaffold;
 
-    const [assemblyImageUrl, disassemblyImageUrl] = await Promise.all([
+    const [assemblyImageUrl, disassemblyImageUrl, modulationPdfUrl, calculationMemoryPdfUrl] = await Promise.all([
       resolveImageUrl(scaffold.assembly_image_url),
       resolveImageUrl(scaffold.disassembly_image_url),
+      resolveImageUrl(scaffold.modulation_pdf_url),
+      resolveImageUrl(scaffold.calculation_memory_pdf_url),
     ]);
 
     return {
       ...scaffold,
       assembly_image_url: assemblyImageUrl,
       disassembly_image_url: disassemblyImageUrl,
+      modulation_pdf_url: modulationPdfUrl,
+      calculation_memory_pdf_url: calculationMemoryPdfUrl,
     };
   }
 
@@ -851,6 +855,89 @@ class ScaffoldService {
   }
 
   /**
+   * Subir/actualizar documentos técnicos PDF del andamio.
+   * @param {number} scaffoldId
+   * @param {object} user - Usuario autenticado
+   * @param {object} filesByField - req.files de multer.fields
+   * @returns {Promise<object>}
+   */
+  static async updateTechnicalDocuments(scaffoldId, user, filesByField = {}) {
+    const scaffold = await Scaffold.getById(scaffoldId);
+    if (!scaffold) {
+      const error = new Error('Andamio no encontrado.');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const project = await this.validateActiveProject(scaffold.project_id);
+    this.validateUserPermissions(user, scaffold, project);
+
+    const modulationFile = Array.isArray(filesByField.modulation_pdf)
+      ? filesByField.modulation_pdf[0]
+      : null;
+    const calculationMemoryFile = Array.isArray(filesByField.calculation_memory_pdf)
+      ? filesByField.calculation_memory_pdf[0]
+      : null;
+
+    if (!modulationFile && !calculationMemoryFile) {
+      const error = new Error('Debes adjuntar al menos un documento PDF (MOD o MC).');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    let uploadedModulationUrl = null;
+    let uploadedCalculationMemoryUrl = null;
+
+    try {
+      if (modulationFile) {
+        uploadedModulationUrl = await uploadDocumentFile(modulationFile);
+      }
+      if (calculationMemoryFile) {
+        uploadedCalculationMemoryUrl = await uploadDocumentFile(calculationMemoryFile);
+      }
+
+      const updateData = {};
+      if (uploadedModulationUrl) {
+        updateData.modulation_pdf_url = uploadedModulationUrl;
+      }
+      if (uploadedCalculationMemoryUrl) {
+        updateData.calculation_memory_pdf_url = uploadedCalculationMemoryUrl;
+      }
+
+      const updated = await Scaffold.update(scaffoldId, updateData);
+
+      await ScaffoldHistory.create({
+        scaffold_id: scaffoldId,
+        user_id: user.id,
+        change_type: 'documents',
+        previous_data: {
+          modulation_pdf_url: scaffold.modulation_pdf_url || null,
+          calculation_memory_pdf_url: scaffold.calculation_memory_pdf_url || null,
+        },
+        new_data: {
+          modulation_pdf_url: updated.modulation_pdf_url || null,
+          calculation_memory_pdf_url: updated.calculation_memory_pdf_url || null,
+        },
+        description: 'Documentos técnicos (MOD/MC) actualizados',
+        scaffold_number: scaffold.scaffold_number,
+        project_name: project?.name,
+        area: scaffold.area,
+        tag: scaffold.tag,
+      });
+
+      return await this._resolveScaffoldImages(updated);
+    } catch (error) {
+      if (uploadedModulationUrl) {
+        await deleteFileByUrl(uploadedModulationUrl);
+      }
+      if (uploadedCalculationMemoryUrl) {
+        await deleteFileByUrl(uploadedCalculationMemoryUrl);
+      }
+      throw error;
+    }
+  }
+
+  /**
    * Eliminar un andamio permanentemente
    * @param {number} scaffoldId - ID del andamio
    * @param {object} user - Usuario { id, role } (debe ser admin)
@@ -957,6 +1044,8 @@ class ScaffoldService {
     await Promise.all([
       deleteFileByUrl(scaffold.assembly_image_url),
       deleteFileByUrl(scaffold.disassembly_image_url),
+      deleteFileByUrl(scaffold.modulation_pdf_url),
+      deleteFileByUrl(scaffold.calculation_memory_pdf_url),
     ]);
   }
 }
