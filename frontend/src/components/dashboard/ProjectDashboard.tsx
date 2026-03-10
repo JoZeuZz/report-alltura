@@ -9,8 +9,11 @@ interface ProjectDashboardSummary {
   assembledCubicMeters: number;
   disassembledCubicMeters: number;
   inProgressCubicMeters: number;
+  historicalAssembledCubicMeters?: number;
   contractedCubicMeters?: number;
   completionPercentage?: number;
+  assemblyProgressPercentage?: number;
+  disassemblyProgressPercentage?: number;
 
   // Andamios
   totalScaffolds: number;
@@ -44,6 +47,18 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ summary, projectNam
     if (total === 0) return '0%';
     return `${Math.round((value / total) * 100)}%`;
   };
+
+  const historicalAssembledCubicMeters =
+    summary.historicalAssembledCubicMeters ?? summary.assembledCubicMeters;
+
+  const assemblyProgressPercentage =
+    summary.assemblyProgressPercentage ?? summary.completionPercentage ?? summary.avgProgress;
+
+  const disassemblyProgressPercentage =
+    summary.disassemblyProgressPercentage ??
+    (historicalAssembledCubicMeters > 0
+      ? Number(((summary.disassembledCubicMeters / historicalAssembledCubicMeters) * 100).toFixed(2))
+      : 0);
 
   // Iconos reutilizables
   const CubeIcon = (
@@ -131,11 +146,11 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ summary, projectNam
           subtitle={`Promedio: ${summary.totalScaffolds > 0 ? formatM3(summary.totalCubicMeters / summary.totalScaffolds) : '0.00'} m³`}
         />
         <MetricCard
-          title="Avance Real"
-          value={`${summary.completionPercentage ?? summary.avgProgress}%`}
+          title="Avance de Armado"
+          value={`${assemblyProgressPercentage}%`}
           icon={ClockIcon}
           colorClass="text-blue-600"
-          subtitle={`Armados vs contratado${typeof summary.contractedCubicMeters === 'number' ? ` (${formatM3(summary.contractedCubicMeters)} m³)` : ''}`}
+          subtitle={`Histórico armado vs contratado${typeof summary.contractedCubicMeters === 'number' ? ` (${formatM3(summary.contractedCubicMeters)} m³)` : ''}`}
         />
         <MetricCard
           title="Creados Hoy"
@@ -233,23 +248,47 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ summary, projectNam
             <div className="w-6 h-6">{CheckCircleIcon}</div>
             <h2 className="text-lg font-semibold">Estado General</h2>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-4">
             <div>
               <div className="flex justify-between mb-1">
-                <span className="text-sm opacity-90">Completado</span>
+                <span className="text-sm opacity-90">Avance de Armado</span>
                 <span className="text-sm font-semibold">
-                  {`${summary.completionPercentage ?? summary.avgProgress}%`}
+                  {`${assemblyProgressPercentage}%`}
                 </span>
               </div>
               <div className="w-full bg-white/20 rounded-full h-2">
                 <div
                   className="bg-white h-2 rounded-full transition-all duration-500"
                   style={{
-                    width: `${Math.max(0, Math.min(100, summary.completionPercentage ?? summary.avgProgress))}%`,
+                    width: `${Math.max(0, Math.min(100, assemblyProgressPercentage))}%`,
                   }}
                 />
               </div>
+              <p className="text-xs opacity-80 mt-1">
+                Armado: {formatM3(historicalAssembledCubicMeters)} m³ de{' '}
+                {formatM3(summary.contractedCubicMeters ?? 0)} m³ contratados
+              </p>
             </div>
+
+            <div>
+              <div className="flex justify-between mb-1">
+                <span className="text-sm opacity-90">Avance de Desarme</span>
+                <span className="text-sm font-semibold">{`${disassemblyProgressPercentage}%`}</span>
+              </div>
+              <div className="w-full bg-white/20 rounded-full h-2">
+                <div
+                  className="bg-yellow-200 h-2 rounded-full transition-all duration-500"
+                  style={{
+                    width: `${Math.max(0, Math.min(100, disassemblyProgressPercentage))}%`,
+                  }}
+                />
+              </div>
+              <p className="text-xs opacity-80 mt-1">
+                Desarme: {formatM3(summary.disassembledCubicMeters)} m³ de{' '}
+                {formatM3(historicalAssembledCubicMeters)} m³ armados
+              </p>
+            </div>
+
             <div className="grid grid-cols-2 gap-3 mt-4">
               <div>
                 <p className="text-xs opacity-75">Andamios Activos</p>

@@ -10,6 +10,7 @@ import {
   ImageProcessingResult,
   ALLOWED_IMAGE_ACCEPT,
 } from '../../utils/imageProcessing';
+import { SCAFFOLD_FIELD_TEXTS } from '../../config/scaffoldFieldTexts';
 
 interface ScaffoldSectionForm {
   id: string;
@@ -393,7 +394,7 @@ const CreateScaffoldPage: React.FC = () => {
                   value={permitNumber}
                   onChange={(e) => setPermitNumber(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
-                  placeholder="Ej: PERM-2026-001"
+                  placeholder={SCAFFOLD_FIELD_TEXTS.permitNumber}
                   required
                 />
               </div>
@@ -409,7 +410,7 @@ const CreateScaffoldPage: React.FC = () => {
                   value={area}
                   onChange={(e) => setArea(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
-                  placeholder="Ej: Zona Norte"
+                  placeholder={SCAFFOLD_FIELD_TEXTS.area}
                 />
               </div>
 
@@ -424,7 +425,7 @@ const CreateScaffoldPage: React.FC = () => {
                   value={tag}
                   onChange={(e) => setTag(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
-                  placeholder="Ej: TAG-123"
+                  placeholder={SCAFFOLD_FIELD_TEXTS.tag}
                 />
               </div>
             </div>
@@ -623,7 +624,7 @@ const CreateScaffoldPage: React.FC = () => {
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
-                placeholder="Ej: Sector Norte, Piso 3"
+                placeholder={SCAFFOLD_FIELD_TEXTS.location}
               />
             </div>
 
@@ -639,7 +640,7 @@ const CreateScaffoldPage: React.FC = () => {
                 onChange={(e) => setObservations(e.target.value)}
                 rows={3}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
-                placeholder="Detalles adicionales sobre el andamio..."
+                placeholder={SCAFFOLD_FIELD_TEXTS.observations}
               />
             </div>
 
@@ -655,7 +656,7 @@ const CreateScaffoldPage: React.FC = () => {
                 onChange={(e) => setAssemblyNotes(e.target.value)}
                 rows={3}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
-                placeholder="Notas sobre el proceso de montaje..."
+                placeholder={SCAFFOLD_FIELD_TEXTS.assemblyNotes}
               />
             </div>
 

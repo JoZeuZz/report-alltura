@@ -92,6 +92,19 @@ const ScaffoldDetailsModal: React.FC<ScaffoldDetailsModalProps> = ({
   const activeImage =
     galleryItems.find((item) => item.key === activeImageKey) || galleryItems[0] || null;
 
+  const attachmentItems = [
+    {
+      key: 'assembly',
+      label: 'Foto de montaje',
+      url: scaffold.assembly_image_url,
+    },
+    {
+      key: 'disassembly',
+      label: 'Foto de desmontaje',
+      url: scaffold.disassembly_image_url,
+    },
+  ].filter((item) => item.url);
+
   useEffect(() => {
     if (!hasAssemblyImage && !hasDisassemblyImage) {
       setActiveImageKey(null);
@@ -737,6 +750,39 @@ const ScaffoldDetailsModal: React.FC<ScaffoldDetailsModalProps> = ({
               <p className="mt-1 text-gray-800">{scaffold.assembly_notes}</p>
             </div>
           )}
+
+          <div className="mt-3 p-3 bg-gray-50 rounded border border-gray-200">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
+              <span className="text-gray-700 text-sm font-semibold">Archivos adjuntos</span>
+              <button
+                type="button"
+                disabled
+                className="w-full sm:w-auto text-xs font-medium px-3 py-1.5 rounded-md border border-gray-300 text-gray-500 bg-white cursor-not-allowed"
+                title="Carga de adjuntos adicionales próximamente"
+              >
+                Adjuntar archivos
+              </button>
+            </div>
+
+            {attachmentItems.length > 0 ? (
+              <div className="space-y-2">
+                {attachmentItems.map((file) => (
+                  <a
+                    key={file.key}
+                    href={getImageUrl(file.url, 'full')}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between rounded-md border border-gray-200 bg-white px-3 py-2 text-sm hover:border-primary-blue"
+                  >
+                    <span className="font-medium text-gray-700">{file.label}</span>
+                    <span className="text-primary-blue">Ver archivo</span>
+                  </a>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500">No hay archivos adjuntos disponibles.</p>
+            )}
+          </div>
         </div>
       </div>
 

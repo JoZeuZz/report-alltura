@@ -18,8 +18,11 @@ interface ProjectDashboardSummary {
   assembledCubicMeters: number;
   disassembledCubicMeters: number;
   inProgressCubicMeters: number;
+  historicalAssembledCubicMeters?: number;
   contractedCubicMeters?: number;
   completionPercentage?: number;
+  assemblyProgressPercentage?: number;
+  disassemblyProgressPercentage?: number;
   totalScaffolds: number;
   assembledScaffolds: number;
   disassembledScaffolds: number;

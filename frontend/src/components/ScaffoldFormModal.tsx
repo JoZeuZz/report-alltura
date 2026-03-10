@@ -7,6 +7,7 @@ import {
   ImageProcessingResult,
   ALLOWED_IMAGE_ACCEPT,
 } from '../utils/imageProcessing';
+import { SCAFFOLD_FIELD_TEXTS } from '../config/scaffoldFieldTexts';
 
 interface ScaffoldFormModalProps {
   isOpen: boolean;
@@ -427,7 +428,7 @@ export const ScaffoldFormModal: React.FC<ScaffoldFormModalProps> = ({
               value={formData.location}
               onChange={handleInputChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-              placeholder="Ej: Sector Norte, Piso 3"
+              placeholder={SCAFFOLD_FIELD_TEXTS.location}
             />
           </div>
 
@@ -442,7 +443,7 @@ export const ScaffoldFormModal: React.FC<ScaffoldFormModalProps> = ({
               onChange={handleInputChange}
               rows={4}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-              placeholder="Notas adicionales sobre el andamio..."
+              placeholder={SCAFFOLD_FIELD_TEXTS.observations}
             />
           </div>
 

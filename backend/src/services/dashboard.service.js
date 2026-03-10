@@ -89,6 +89,26 @@ class DashboardService {
         [projectId]
       );
 
+      // 1.1 Metros cúbicos armados históricos acumulados
+      // Regla: un andamio cuenta como "armado histórico" si:
+      // - Está actualmente armado, o
+      // - En su historial existe al menos un evento con assembly_status='assembled'
+      const historicalAssembledResult = await db.query(
+        `SELECT COALESCE(SUM(s.cubic_meters), 0) AS historical_assembled_cubic_meters
+         FROM scaffolds s
+         WHERE s.project_id = $1
+           AND (
+             s.assembly_status = 'assembled'
+             OR EXISTS (
+               SELECT 1
+               FROM scaffold_history sh
+               WHERE sh.scaffold_id = s.id
+                 AND sh.new_data->>'assembly_status' = 'assembled'
+             )
+           )`,
+        [projectId]
+      );
+
       const projectResult = await db.query(
         `SELECT contracted_cubic_meters
          FROM projects
@@ -138,13 +158,25 @@ class DashboardService {
       );
 
       const cubicMetersStats = cubicMetersResult.rows[0];
+      const historicalStats = historicalAssembledResult.rows[0];
       const scaffoldStats = scaffoldStatsResult.rows[0];
       const recentCount = recentScaffoldsResult.rows[0].recent_count;
       const contractedCubicMeters = parseFloat(projectResult.rows[0]?.contracted_cubic_meters) || 0;
       const assembledCubicMeters = parseFloat(cubicMetersStats.assembled_cubic_meters) || 0;
-      const completionPercentage =
+      const disassembledCubicMeters = parseFloat(cubicMetersStats.disassembled_cubic_meters) || 0;
+      const historicalAssembledCubicMeters =
+        parseFloat(historicalStats.historical_assembled_cubic_meters) || 0;
+
+      // Avance de armado: histórico acumulado / contratado
+      const assemblyProgressPercentage =
         contractedCubicMeters > 0
-          ? Math.min(100, Math.round((assembledCubicMeters / contractedCubicMeters) * 100))
+          ? Math.min(100, Number(((historicalAssembledCubicMeters / contractedCubicMeters) * 100).toFixed(2)))
+          : 0;
+
+      // Avance de desarme: desarmado actual / armado histórico acumulado
+      const disassemblyProgressPercentage =
+        historicalAssembledCubicMeters > 0
+          ? Math.min(100, Number(((disassembledCubicMeters / historicalAssembledCubicMeters) * 100).toFixed(2)))
           : 0;
 
       const recentScaffolds = await Promise.all(
@@ -159,10 +191,13 @@ class DashboardService {
         // Métricas de metros cúbicos
         totalCubicMeters: parseFloat(cubicMetersStats.total_cubic_meters) || 0,
         assembledCubicMeters,
-        disassembledCubicMeters: parseFloat(cubicMetersStats.disassembled_cubic_meters) || 0,
+        disassembledCubicMeters,
         inProgressCubicMeters: parseFloat(cubicMetersStats.in_progress_cubic_meters) || 0,
+        historicalAssembledCubicMeters,
         contractedCubicMeters,
-        completionPercentage,
+        completionPercentage: assemblyProgressPercentage, // Compatibilidad con frontend actual
+        assemblyProgressPercentage,
+        disassemblyProgressPercentage,
 
         // Métricas de andamios
         totalScaffolds: scaffoldStats.total_scaffolds || 0,
@@ -175,7 +210,7 @@ class DashboardService {
         // Métricas adicionales
         recentScaffoldsCount: recentCount || 0,
         recentScaffolds,
-        avgProgress: completionPercentage,
+        avgProgress: assemblyProgressPercentage,
       };
     } catch (error) {
       logger.error('Error al obtener resumen del proyecto:', error);
