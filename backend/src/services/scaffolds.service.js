@@ -938,6 +938,81 @@ class ScaffoldService {
   }
 
   /**
+   * Eliminar un documento técnico PDF específico (MOD o MC) del andamio.
+   * @param {number} scaffoldId
+   * @param {object} user - Usuario autenticado
+   * @param {'modulation'|'calculation_memory'} documentType
+   * @returns {Promise<object>}
+   */
+  static async deleteTechnicalDocument(scaffoldId, user, documentType) {
+    const scaffold = await Scaffold.getById(scaffoldId);
+    if (!scaffold) {
+      const error = new Error('Andamio no encontrado.');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const project = await this.validateActiveProject(scaffold.project_id);
+    this.validateUserPermissions(user, scaffold, project);
+
+    const documentMap = {
+      modulation: {
+        field: 'modulation_pdf_url',
+        label: 'Modulación (MOD)',
+      },
+      calculation_memory: {
+        field: 'calculation_memory_pdf_url',
+        label: 'Memoria de Cálculo (MC)',
+      },
+    };
+
+    const config = documentMap[documentType];
+    if (!config) {
+      const error = new Error('Tipo de documento inválido. Usa modulation o calculation_memory.');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const currentUrl = scaffold[config.field];
+    if (!currentUrl) {
+      const error = new Error(`No existe un documento cargado para ${config.label}.`);
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const updated = await Scaffold.update(scaffoldId, {
+      [config.field]: null,
+    });
+
+    try {
+      await deleteFileByUrl(currentUrl);
+    } catch (cleanupError) {
+      logger.warn(`No se pudo eliminar archivo físico (${config.label}) del andamio ${scaffoldId}: ${cleanupError.message}`);
+    }
+
+    await ScaffoldHistory.create({
+      scaffold_id: scaffoldId,
+      user_id: user.id,
+      change_type: 'documents',
+      previous_data: {
+        modulation_pdf_url: scaffold.modulation_pdf_url || null,
+        calculation_memory_pdf_url: scaffold.calculation_memory_pdf_url || null,
+      },
+      new_data: {
+        modulation_pdf_url: updated.modulation_pdf_url || null,
+        calculation_memory_pdf_url: updated.calculation_memory_pdf_url || null,
+      },
+      description: `Documento técnico eliminado: ${config.label}`,
+      scaffold_number: scaffold.scaffold_number,
+      project_name: project?.name,
+      area: scaffold.area,
+      tag: scaffold.tag,
+    });
+
+    return await this._resolveScaffoldImages(updated);
+  }
+
+  /**
    * Eliminar un andamio permanentemente
    * @param {number} scaffoldId - ID del andamio
    * @param {object} user - Usuario { id, role } (debe ser admin)

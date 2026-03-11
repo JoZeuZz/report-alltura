@@ -136,6 +136,14 @@ export const uploadScaffoldTechnicalDocuments = (
 };
 
 /**
+ * Elimina un documento técnico PDF (MOD o MC) de un andamio.
+ */
+export const deleteScaffoldTechnicalDocument = (
+  scaffoldId: number,
+  documentType: 'modulation' | 'calculation_memory'
+) => del(`/scaffolds/${scaffoldId}/documents/${documentType}`);
+
+/**
  * Actualiza el estado de la tarjeta (green/red)
  */
 export const updateCardStatus = (id: number, cardStatus: 'green' | 'red') =>

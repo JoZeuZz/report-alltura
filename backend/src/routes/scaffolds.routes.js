@@ -277,6 +277,18 @@ router.patch(
 );
 
 /**
+ * @route   DELETE /api/scaffolds/:id/documents/:documentType
+ * @desc    Eliminar documento técnico PDF (modulation o calculation_memory)
+ * @access  Private (validación de acceso + Admin o Supervisor del proyecto)
+ */
+router.delete(
+  '/:id/documents/:documentType',
+  checkScaffoldAccess,
+  isAdminOrSupervisor,
+  ScaffoldController.deleteTechnicalDocument
+);
+
+/**
  * @route   DELETE /api/scaffolds/:id
  * @desc    Eliminar un andamio permanentemente
  * @access  Private (validación de acceso + Admin only)

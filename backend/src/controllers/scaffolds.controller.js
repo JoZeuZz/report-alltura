@@ -293,6 +293,33 @@ class ScaffoldController {
   }
 
   /**
+   * Eliminar documento técnico específico (MOD o MC) de un andamio
+   * @route DELETE /api/scaffolds/:id/documents/:documentType
+   */
+  static async deleteTechnicalDocument(req, res, next) {
+    try {
+      const { id, documentType } = req.params;
+      const user = req.user;
+
+      const updated = await ScaffoldService.deleteTechnicalDocument(
+        parseInt(id),
+        user,
+        documentType
+      );
+
+      res.json(updated);
+    } catch (err) {
+      const statusCode = err.statusCode || 500;
+      logger.error(`Error al eliminar documento técnico: ${err.message}`, err);
+
+      if (statusCode < 500) {
+        return res.status(statusCode).json({ message: err.message });
+      }
+      next(err);
+    }
+  }
+
+  /**
    * Eliminar un andamio permanentemente (solo admin)
    * @route DELETE /api/scaffolds/:id
    */

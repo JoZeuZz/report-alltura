@@ -7,7 +7,8 @@ import ModificationsList from './ModificationsList';
 import ClientNotesList from './ClientNotesList';
 import { useScaffoldModifications } from '../hooks/useScaffoldModifications';
 import { useClientNotes } from '../hooks/useClientNotes';
-import { put, uploadScaffoldTechnicalDocuments } from '../services/apiService';
+import { put, uploadScaffoldTechnicalDocuments, deleteScaffoldTechnicalDocument } from '../services/apiService';
+import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import ImageWithFallback from './ImageWithFallback';
@@ -45,6 +46,7 @@ const ScaffoldDetailsModal: React.FC<ScaffoldDetailsModalProps> = ({
     scaffold.calculation_memory_pdf_url || null
   );
   const [uploadingDocType, setUploadingDocType] = useState<'modulation' | 'calculation_memory' | null>(null);
+  const [removingDocType, setRemovingDocType] = useState<'modulation' | 'calculation_memory' | null>(null);
   const [activeImageKey, setActiveImageKey] = useState<'assembly' | 'disassembly' | null>(
     scaffold.assembly_image_url ? 'assembly' : scaffold.disassembly_image_url ? 'disassembly' : null
   );
@@ -147,7 +149,7 @@ const ScaffoldDetailsModal: React.FC<ScaffoldDetailsModalProps> = ({
     if (!file || !canEdit || isUpdating) return;
 
     if (file.type !== 'application/pdf') {
-      alert('Solo se permiten archivos PDF.');
+      toast.error('Solo se permiten archivos PDF.');
       return;
     }
 
@@ -160,12 +162,46 @@ const ScaffoldDetailsModal: React.FC<ScaffoldDetailsModalProps> = ({
 
       setModulationPdfUrl(updated?.modulation_pdf_url || null);
       setCalculationMemoryPdfUrl(updated?.calculation_memory_pdf_url || null);
+      toast.success(
+        type === 'modulation'
+          ? 'Documento MOD subido correctamente.'
+          : 'Documento MC subido correctamente.'
+      );
       if (onUpdate) onUpdate();
     } catch (error) {
       console.error('Error subiendo documento técnico:', error);
-      alert('No se pudo subir el documento. Intenta nuevamente.');
+      toast.error('No se pudo subir el documento. Intenta nuevamente.');
     } finally {
       setUploadingDocType(null);
+    }
+  };
+
+  const handleTechnicalDocumentDelete = async (type: 'modulation' | 'calculation_memory') => {
+    if (!canEdit || isUpdating || uploadingDocType || removingDocType) return;
+
+    const hasDocument = type === 'modulation' ? Boolean(modulationPdfUrl) : Boolean(calculationMemoryPdfUrl);
+    if (!hasDocument) return;
+
+    const docLabel = type === 'modulation' ? 'Modulación (MOD)' : 'Memoria de Cálculo (MC)';
+    const confirmed = window.confirm(`¿Eliminar ${docLabel}? Esta acción no se puede deshacer.`);
+    if (!confirmed) return;
+
+    try {
+      setRemovingDocType(type);
+      const updated = await deleteScaffoldTechnicalDocument(scaffold.id, type);
+      setModulationPdfUrl(updated?.modulation_pdf_url || null);
+      setCalculationMemoryPdfUrl(updated?.calculation_memory_pdf_url || null);
+      toast.success(
+        type === 'modulation'
+          ? 'Documento MOD eliminado correctamente.'
+          : 'Documento MC eliminado correctamente.'
+      );
+      if (onUpdate) onUpdate();
+    } catch (error) {
+      console.error('Error eliminando documento técnico:', error);
+      toast.error('No se pudo eliminar el documento. Intenta nuevamente.');
+    } finally {
+      setRemovingDocType(null);
     }
   };
 
@@ -854,9 +890,19 @@ const ScaffoldDetailsModal: React.FC<ScaffoldDetailsModalProps> = ({
                         accept="application/pdf"
                         className="hidden"
                         onChange={(e) => handleTechnicalDocumentUpload('modulation', e.target.files?.[0])}
-                        disabled={uploadingDocType !== null}
+                        disabled={uploadingDocType !== null || removingDocType !== null}
                       />
                     </label>
+                  )}
+                  {canEdit && modulationPdfUrl && (
+                    <button
+                      type="button"
+                      onClick={() => handleTechnicalDocumentDelete('modulation')}
+                      disabled={uploadingDocType !== null || removingDocType !== null}
+                      className="px-3 py-1.5 rounded-md text-xs font-semibold border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      {removingDocType === 'modulation' ? 'Eliminando...' : 'Eliminar'}
+                    </button>
                   )}
                 </div>
               </div>
@@ -894,9 +940,19 @@ const ScaffoldDetailsModal: React.FC<ScaffoldDetailsModalProps> = ({
                         onChange={(e) =>
                           handleTechnicalDocumentUpload('calculation_memory', e.target.files?.[0])
                         }
-                        disabled={uploadingDocType !== null}
+                        disabled={uploadingDocType !== null || removingDocType !== null}
                       />
                     </label>
+                  )}
+                  {canEdit && calculationMemoryPdfUrl && (
+                    <button
+                      type="button"
+                      onClick={() => handleTechnicalDocumentDelete('calculation_memory')}
+                      disabled={uploadingDocType !== null || removingDocType !== null}
+                      className="px-3 py-1.5 rounded-md text-xs font-semibold border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      {removingDocType === 'calculation_memory' ? 'Eliminando...' : 'Eliminar'}
+                    </button>
                   )}
                 </div>
               </div>
