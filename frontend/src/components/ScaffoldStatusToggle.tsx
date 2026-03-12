@@ -42,17 +42,18 @@ export const ScaffoldStatusToggle: React.FC<ScaffoldStatusToggleProps> = ({
 
   // Solo admin o supervisor propietario pueden editar
   const canEdit = (userRole === 'admin' || (userRole === 'supervisor' && isOwner)) && !disabled;
+  const isDisassembled = scaffold.assembly_status === 'disassembled';
+  const isGreenCard = scaffold.card_status === 'green';
 
   const handleCardToggle = async () => {
     if (!canEdit || isChangingCard) return;
 
-    // No permitir cambiar a verde si está desarmado
-    if (scaffold.assembly_status === 'disassembled' && scaffold.card_status === 'red') {
-      alert('No puedes cambiar la tarjeta a verde mientras el andamio esté desarmado');
+    if (isDisassembled) {
+      alert('Un andamio desarmado no tiene tarjeta activa.');
       return;
     }
 
-    const newStatus = scaffold.card_status === 'green' ? 'red' : 'green';
+    const newStatus = isGreenCard ? 'red' : 'green';
     
     if (window.confirm(`¿Cambiar tarjeta a ${newStatus === 'green' ? 'VERDE' : 'ROJA'}?`)) {
       setIsChangingCard(true);
@@ -96,19 +97,25 @@ export const ScaffoldStatusToggle: React.FC<ScaffoldStatusToggleProps> = ({
         <div className="flex items-center space-x-3">
           <div
             className={`w-12 h-12 rounded-full flex items-center justify-center ${
-              scaffold.card_status === 'green'
+              isDisassembled
+                ? 'bg-gray-400'
+                : isGreenCard
                 ? 'bg-green-500'
                 : 'bg-red-500'
             }`}
           >
             <span className="text-white font-bold text-xl">
-              {scaffold.card_status === 'green' ? '✓' : '✗'}
+              {isDisassembled ? '•' : isGreenCard ? '✓' : '✗'}
             </span>
           </div>
           <div>
             <h3 className="font-semibold">Estado de Tarjeta</h3>
             <p className="text-sm text-gray-600">
-              {scaffold.card_status === 'green' ? 'Verde - Todo OK' : 'Roja - Hay problemas'}
+              {isDisassembled
+                ? 'No aplica - Andamio desarmado'
+                : isGreenCard
+                ? 'Verde - Todo OK'
+                : 'Roja - Hay problemas'}
             </p>
           </div>
         </div>
@@ -116,23 +123,25 @@ export const ScaffoldStatusToggle: React.FC<ScaffoldStatusToggleProps> = ({
         {canEdit && (
           <button
             onClick={handleCardToggle}
-            disabled={isChangingCard || scaffold.assembly_status === 'disassembled'}
+            disabled={isChangingCard || isDisassembled}
             role="switch"
-            aria-checked={scaffold.card_status === 'green'}
-            aria-label={`Cambiar estado de tarjeta a ${scaffold.card_status === 'green' ? 'rojo' : 'verde'}`}
+            aria-checked={isGreenCard}
+            aria-label={`Cambiar estado de tarjeta a ${isGreenCard ? 'rojo' : 'verde'}`}
             className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${
-              scaffold.card_status === 'green'
+              isDisassembled
+                ? 'bg-gray-400'
+                : isGreenCard
                 ? 'bg-green-500'
                 : 'bg-red-500'
             } ${
-              !canEdit || scaffold.assembly_status === 'disassembled'
+              !canEdit || isDisassembled
                 ? 'opacity-50 cursor-not-allowed'
                 : 'cursor-pointer'
             }`}
           >
             <span
               className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${
-                scaffold.card_status === 'green' ? 'translate-x-7' : 'translate-x-1'
+                isGreenCard ? 'translate-x-7' : 'translate-x-1'
               }`}
             />
           </button>

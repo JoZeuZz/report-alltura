@@ -14,23 +14,37 @@ export const ScaffoldStatusBadge: React.FC<ScaffoldStatusBadgeProps> = React.mem
   scaffold,
   showDetails = false,
 }) => {
+  const isDisassembled = scaffold.assembly_status === 'disassembled';
+  const isGreen = scaffold.card_status === 'green';
+  const cardClass = isDisassembled
+    ? 'bg-gray-500'
+    : isGreen
+    ? 'bg-green-500'
+    : 'bg-red-500';
+  const cardTitle = isDisassembled
+    ? 'Desarmado - Sin tarjeta activa'
+    : isGreen
+    ? 'Tarjeta Verde - Todo OK'
+    : 'Tarjeta Roja - Hay problemas';
+  const cardAria = isDisassembled
+    ? 'Estado de tarjeta: no aplica, andamio desarmado'
+    : isGreen
+    ? 'Estado de tarjeta: verde, todo OK'
+    : 'Estado de tarjeta: roja, hay problemas';
+
   return (
     <div className="flex items-center space-x-2">
       {/* Badge de Tarjeta */}
       <div
-        className={`flex items-center space-x-1 px-3 py-1 rounded-full text-white text-sm font-medium ${
-          scaffold.card_status === 'green'
-            ? 'bg-green-500'
-            : 'bg-red-500'
-        }`}
-        title={scaffold.card_status === 'green' ? 'Tarjeta Verde - Todo OK' : 'Tarjeta Roja - Hay problemas'}
+        className={`flex items-center space-x-1 px-3 py-1 rounded-full text-white text-sm font-medium ${cardClass}`}
+        title={cardTitle}
         role={!showDetails ? 'status' : undefined}
         aria-live={!showDetails ? 'polite' : undefined}
-        aria-label={!showDetails ? `Estado de tarjeta: ${scaffold.card_status === 'green' ? 'verde, todo OK' : 'roja, hay problemas'}` : undefined}
+        aria-label={!showDetails ? cardAria : undefined}
       >
-        <span>{scaffold.card_status === 'green' ? '✓' : '✗'}</span>
+        <span>{isDisassembled ? '•' : isGreen ? '✓' : '✗'}</span>
         {showDetails && (
-          <span>{scaffold.card_status === 'green' ? 'Verde' : 'Roja'}</span>
+          <span>{isDisassembled ? 'Desarmado' : isGreen ? 'Verde' : 'Roja'}</span>
         )}
       </div>
 

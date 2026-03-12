@@ -358,7 +358,7 @@ const ScaffoldsPage: React.FC = () => {
       // Actualizar estado local
       setScaffolds(scaffolds.map(s => 
         s.id === scaffoldToDisassemble 
-          ? { ...s, assembly_status: 'disassembled', card_status: 'red', progress_percentage: 0 } 
+          ? { ...s, assembly_status: 'disassembled', card_status: null, progress_percentage: 0 } 
           : s
       ));
       
@@ -495,8 +495,8 @@ const ScaffoldsPage: React.FC = () => {
     assembledM3: filteredScaffolds
       .filter(s => s.assembly_status === 'assembled')
       .reduce((sum, s) => sum + (Number(s.cubic_meters) || 0), 0),
-    greenCards: filteredScaffolds.filter(s => s.card_status === 'green').length,
-    redCards: filteredScaffolds.filter(s => s.card_status === 'red').length,
+    greenCards: filteredScaffolds.filter(s => s.assembly_status !== 'disassembled' && s.card_status === 'green').length,
+    redCards: filteredScaffolds.filter(s => s.assembly_status !== 'disassembled' && s.card_status === 'red').length,
   };
 
   // alertItems deshabilitado

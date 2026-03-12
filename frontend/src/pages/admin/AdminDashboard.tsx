@@ -23,6 +23,8 @@ interface DashboardSummary {
   inProgressScaffolds: number;
   greenCards: number;
   redCards: number;
+  disassembledWithoutCardScaffolds?: number;
+  activeCardsTotal?: number;
   
   // Recientes
   recentScaffoldsCount: number;
@@ -180,6 +182,10 @@ const RecentReportsTable: React.FC<{ reports: Scaffold[] }> = ({ reports }) => (
 
 const AdminDashboard: React.FC = () => {
   const { summary } = useLoaderData() as LoaderData;
+  const activeCardsTotal =
+    summary?.activeCardsTotal || ((summary?.greenCards || 0) + (summary?.redCards || 0));
+  const disassembledWithoutCardScaffolds =
+    summary?.disassembledWithoutCardScaffolds ?? summary?.disassembledScaffolds ?? 0;
 
   const formatM3 = (num: number) => formatCubicMeters(num);
 
@@ -330,8 +336,8 @@ const AdminDashboard: React.FC = () => {
             {
               label: 'Tarjetas Verdes',
               value: `${summary?.greenCards || 0} (${
-                summary?.totalScaffolds
-                  ? Math.round(((summary.greenCards || 0) / summary.totalScaffolds) * 100)
+                activeCardsTotal
+                  ? Math.round(((summary?.greenCards || 0) / activeCardsTotal) * 100)
                   : 0
               }%)`,
               color: 'text-green-600',
@@ -339,11 +345,20 @@ const AdminDashboard: React.FC = () => {
             {
               label: 'Tarjetas Rojas',
               value: `${summary?.redCards || 0} (${
-                summary?.totalScaffolds
-                  ? Math.round(((summary.redCards || 0) / summary.totalScaffolds) * 100)
+                activeCardsTotal
+                  ? Math.round(((summary?.redCards || 0) / activeCardsTotal) * 100)
                   : 0
               }%)`,
               color: 'text-red-600',
+            },
+            {
+              label: 'Desarmados',
+              value: `${disassembledWithoutCardScaffolds} (${
+                summary?.totalScaffolds
+                  ? Math.round((disassembledWithoutCardScaffolds / summary.totalScaffolds) * 100)
+                  : 0
+              }%)`,
+              color: 'text-gray-600',
             },
             {
               label: 'Total',

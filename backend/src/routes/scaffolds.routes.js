@@ -86,14 +86,18 @@ const updateScaffoldStatusSchema = Joi.object({
 })
   .or('assembly_status', 'card_status', 'progress_percentage')
   .custom((value, helpers) => {
-    if (value.assembly_status === 'disassembled' && value.card_status === 'green') {
-      return helpers.error('custom.disassembledGreen');
+    if (
+      value.assembly_status === 'disassembled' &&
+      value.card_status !== undefined &&
+      value.card_status !== null
+    ) {
+      return helpers.error('custom.disassembledCard');
     }
     return value;
   }, 'Validación de consistencia de estados')
   .messages({
-    'custom.disassembledGreen':
-      'Un andamio desarmado no puede tener tarjeta verde. Debe tener tarjeta roja.',
+    'custom.disassembledCard':
+      'Un andamio desarmado no puede tener tarjeta asignada. Debe quedar sin tarjeta.',
   });
 
 // ============================================

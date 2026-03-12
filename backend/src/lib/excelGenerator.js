@@ -92,7 +92,12 @@ async function generateReportExcel(project, scaffolds, modifications = []) {
       supervisor_name: supervisorName,
       assembly_status: scaffold.assembly_status === 'assembled' ? 'Armado' : 
                        scaffold.assembly_status === 'in_progress' ? 'En Proceso' : 'Desarmado',
-      card_status: scaffold.card_status === 'green' ? 'Verde' : 'Roja',
+      card_status:
+        scaffold.assembly_status === 'disassembled'
+          ? 'No aplica'
+          : scaffold.card_status === 'green'
+          ? 'Verde'
+          : 'Roja',
       progress: scaffold.progress_percentage,
       height: parseFloat(scaffold.height),
       width: parseFloat(scaffold.width),
@@ -187,8 +192,8 @@ async function generateReportExcel(project, scaffolds, modifications = []) {
   const assembledM3 = scaffolds.filter(s => s.assembly_status === 'assembled').reduce((sum, s) => sum + parseFloat(s.cubic_meters), 0);
   const assembledAdditionalM3 = scaffolds.filter(s => s.assembly_status === 'assembled').reduce((sum, s) => sum + parseFloat(s.additional_cubic_meters || 0), 0);
   const assembledTotalM3 = scaffolds.filter(s => s.assembly_status === 'assembled').reduce((sum, s) => sum + parseFloat(s.total_cubic_meters || s.cubic_meters), 0);
-  const greenCards = scaffolds.filter(s => s.card_status === 'green').length;
-  const redCards = scaffolds.filter(s => s.card_status === 'red').length;
+  const greenCards = scaffolds.filter(s => s.assembly_status !== 'disassembled' && s.card_status === 'green').length;
+  const redCards = scaffolds.filter(s => s.assembly_status !== 'disassembled' && s.card_status === 'red').length;
 
   // Configurar columnas del resumen
   summarySheet.columns = [

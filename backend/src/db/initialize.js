@@ -104,7 +104,7 @@ const initializeDatabase = async () => {
         height DECIMAL NOT NULL,
         cubic_meters DECIMAL NOT NULL,
         progress_percentage INTEGER NOT NULL DEFAULT 100 CHECK(progress_percentage >= 0 AND progress_percentage <= 100),
-        card_status VARCHAR(50) NOT NULL DEFAULT 'green' CHECK(card_status IN ('green', 'red')),
+        card_status VARCHAR(50) DEFAULT NULL CHECK(card_status IN ('green', 'red')),
         assembly_status VARCHAR(50) NOT NULL DEFAULT 'assembled' CHECK(assembly_status IN ('assembled', 'disassembled', 'in_progress')),
         assembly_image_url VARCHAR(255) NOT NULL,
         assembly_notes TEXT,
@@ -389,6 +389,42 @@ const initializeDatabase = async () => {
           CHECK (contracted_cubic_meters >= 0);
         END IF;
       END $$;
+    `);
+
+    // Permitir card_status nulo y normalizar desarmados sin tarjeta.
+    await client.query(`
+      DO $$
+      BEGIN
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_name = 'scaffolds'
+            AND column_name = 'card_status'
+            AND is_nullable = 'NO'
+        ) THEN
+          ALTER TABLE scaffolds ALTER COLUMN card_status DROP NOT NULL;
+        END IF;
+
+        ALTER TABLE scaffolds ALTER COLUMN card_status DROP DEFAULT;
+
+        IF EXISTS (
+          SELECT 1
+          FROM pg_constraint
+          WHERE conname = 'scaffolds_card_status_check'
+            AND conrelid = 'scaffolds'::regclass
+        ) THEN
+          ALTER TABLE scaffolds DROP CONSTRAINT scaffolds_card_status_check;
+        END IF;
+
+        ALTER TABLE scaffolds
+          ADD CONSTRAINT scaffolds_card_status_check
+          CHECK (card_status IN ('green', 'red'));
+      END $$;
+    `);
+
+    await client.query(`
+      UPDATE scaffolds
+      SET card_status = NULL
+      WHERE assembly_status = 'disassembled'
     `);
 
     await client.query(`

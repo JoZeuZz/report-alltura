@@ -22,6 +22,8 @@ interface ProjectDashboardSummary {
   inProgressScaffolds: number;
   greenCards: number;
   redCards: number;
+  disassembledWithoutCardScaffolds?: number;
+  activeCardsTotal?: number;
 
   // Adicionales
   recentScaffoldsCount: number;
@@ -59,6 +61,10 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ summary, projectNam
     (historicalAssembledCubicMeters > 0
       ? Number(((summary.disassembledCubicMeters / historicalAssembledCubicMeters) * 100).toFixed(2))
       : 0);
+
+  const activeCardsTotal = summary.activeCardsTotal ?? (summary.greenCards + summary.redCards);
+  const disassembledWithoutCardScaffolds =
+    summary.disassembledWithoutCardScaffolds ?? summary.disassembledScaffolds;
 
   // Iconos reutilizables
   const CubeIcon = (
@@ -227,7 +233,7 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ summary, projectNam
               label: 'Tarjetas Verdes',
               value: `${summary.greenCards} (${formatPercentage(
                 summary.greenCards,
-                summary.totalScaffolds
+                activeCardsTotal
               )})`,
               color: 'text-green-600',
             },
@@ -235,9 +241,17 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ summary, projectNam
               label: 'Tarjetas Rojas',
               value: `${summary.redCards} (${formatPercentage(
                 summary.redCards,
-                summary.totalScaffolds
+                activeCardsTotal
               )})`,
               color: 'text-red-600',
+            },
+            {
+              label: 'Desarmados',
+              value: `${disassembledWithoutCardScaffolds} (${formatPercentage(
+                disassembledWithoutCardScaffolds,
+                summary.totalScaffolds
+              )})`,
+              color: 'text-gray-600',
             },
           ]}
         />

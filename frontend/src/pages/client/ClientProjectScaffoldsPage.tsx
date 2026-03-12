@@ -381,20 +381,33 @@ const ClientProjectScaffoldsPage: React.FC = () => {
                     {/* Badge de estado de tarjeta */}
                     <div className="absolute top-2 left-2">
                       <div className="flex items-center gap-2">
-                        <div
-                          className={`w-8 h-8 rounded-full shadow-lg border-2 border-white flex items-center justify-center ${
-                            scaffold.card_status === 'green'
-                              ? 'bg-green-500'
-                              : 'bg-red-500'
-                          }`}
-                          title={scaffold.card_status === 'green' ? 'Tarjeta Verde - Habilitado' : 'Tarjeta Roja - No Habilitado'}
-                        >
-                          {scaffold.card_status === 'red' && (
-                            <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z" clipRule="evenodd" />
-                            </svg>
-                          )}
-                        </div>
+                        {(() => {
+                          const isDisassembled = scaffold.assembly_status === 'disassembled';
+                          const isGreen = scaffold.card_status === 'green';
+                          const dotClass = isDisassembled
+                            ? 'bg-gray-400'
+                            : isGreen
+                            ? 'bg-green-500'
+                            : 'bg-red-500';
+                          const title = isDisassembled
+                            ? 'Desarmado - Sin tarjeta activa'
+                            : isGreen
+                            ? 'Tarjeta Verde - Habilitado'
+                            : 'Tarjeta Roja - No Habilitado';
+
+                          return (
+                            <div
+                              className={`w-8 h-8 rounded-full shadow-lg border-2 border-white flex items-center justify-center ${dotClass}`}
+                              title={title}
+                            >
+                              {!isDisassembled && scaffold.card_status === 'red' && (
+                                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z" clipRule="evenodd" />
+                                </svg>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
                   </div>
@@ -409,29 +422,41 @@ const ClientProjectScaffoldsPage: React.FC = () => {
                     
                     {/* Indicadores de estado */}
                     <div className="flex gap-2 mb-3">
-                      <div
-                        className={`px-3 py-1 rounded-lg text-xs font-semibold inline-flex items-center gap-1 ${
-                          scaffold.card_status === 'green'
-                            ? 'bg-green-100 text-green-800 border border-green-300'
-                            : 'bg-red-100 text-red-800 border border-red-300'
-                        }`}
-                      >
-                        {scaffold.card_status === 'green' ? (
-                          <>
-                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                            </svg>
-                            Tarjeta Verde
-                          </>
-                        ) : (
-                          <>
-                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z" clipRule="evenodd" />
-                            </svg>
-                            Tarjeta Roja
-                          </>
-                        )}
-                      </div>
+                      {(() => {
+                        const isDisassembled = scaffold.assembly_status === 'disassembled';
+                        const badgeClass = isDisassembled
+                          ? 'bg-gray-100 text-gray-700 border border-gray-300'
+                          : scaffold.card_status === 'green'
+                          ? 'bg-green-100 text-green-800 border border-green-300'
+                          : 'bg-red-100 text-red-800 border border-red-300';
+
+                        return (
+                          <div className={`px-3 py-1 rounded-lg text-xs font-semibold inline-flex items-center gap-1 ${badgeClass}`}>
+                            {isDisassembled ? (
+                              <>
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-3 8h6v2H7V26z" clipRule="evenodd" />
+                                </svg>
+                                Desarmado
+                              </>
+                            ) : scaffold.card_status === 'green' ? (
+                              <>
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                </svg>
+                                Tarjeta Verde
+                              </>
+                            ) : (
+                              <>
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z" clipRule="evenodd" />
+                                </svg>
+                                Tarjeta Roja
+                              </>
+                            )}
+                          </div>
+                        );
+                      })()}
                       {scaffold.assembly_status === 'disassembled' && (
                         <div className="px-3 py-1 rounded-lg text-xs font-semibold bg-yellow-100 text-yellow-800 border border-yellow-300 inline-flex items-center gap-1">
                           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">

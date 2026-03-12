@@ -134,7 +134,7 @@ class ScaffoldService {
    */
   static determineAssemblyState(progressPercentage) {
     let assembly_status;
-    let card_status = 'red'; // Siempre por defecto rojo
+    let card_status = 'red';
 
     if (progressPercentage === 100) {
       // 100% = Armado completo
@@ -145,6 +145,7 @@ class ScaffoldService {
     } else {
       // 0% = Desarmado
       assembly_status = 'disassembled';
+      card_status = null;
     }
 
     return { assembly_status, card_status };
@@ -233,9 +234,9 @@ class ScaffoldService {
       throw error;
     }
 
-    if (newData.card_status && newData.card_status !== 'red') {
+    if (newData.card_status !== undefined && newData.card_status !== null) {
       const error = new Error(
-        'Los andamios desarmados deben mantener tarjeta roja como registro de seguridad.'
+        'Un andamio desarmado no puede tener tarjeta asignada. Debe permanecer sin tarjeta.'
       );
       error.statusCode = 400;
       throw error;
@@ -270,7 +271,7 @@ class ScaffoldService {
     if (syncedData.progress_percentage !== undefined) {
       if (syncedData.progress_percentage === 0) {
         syncedData.assembly_status = 'disassembled';
-        syncedData.card_status = 'red';
+        syncedData.card_status = null;
       } else if (syncedData.progress_percentage === 100) {
         syncedData.assembly_status = 'assembled';
       } else {
@@ -284,7 +285,7 @@ class ScaffoldService {
         syncedData.progress_percentage = 100;
       } else if (syncedData.assembly_status === 'disassembled') {
         syncedData.progress_percentage = 0;
-        syncedData.card_status = 'red';
+        syncedData.card_status = null;
       }
     }
 
@@ -301,8 +302,16 @@ class ScaffoldService {
       throw error;
     }
 
-    // Forzar tarjeta roja si está desarmado
+    // Desarmado no tiene tarjeta asignada
     if (syncedData.assembly_status === 'disassembled') {
+      syncedData.card_status = null;
+    }
+
+    // Para estados activos, mantener comportamiento existente: tarjeta roja por defecto
+    if (
+      (syncedData.assembly_status === 'assembled' || syncedData.assembly_status === 'in_progress') &&
+      syncedData.card_status == null
+    ) {
       syncedData.card_status = 'red';
     }
 
@@ -689,10 +698,10 @@ class ScaffoldService {
     const project = await Project.getById(scaffold.project_id);
     this.validateUserPermissions(user, scaffold, project);
 
-    // No permitir tarjeta verde si está desarmado
-    if (cardStatus === 'green' && scaffold.assembly_status === 'disassembled') {
+    // No permitir gestión de tarjeta en andamios desarmados
+    if (scaffold.assembly_status === 'disassembled') {
       const error = new Error(
-        'No puedes cambiar la tarjeta a verde mientras el andamio esté desarmado.'
+        'Un andamio desarmado no tiene tarjeta activa. Primero debe estar armado o en proceso.'
       );
       error.statusCode = 400;
       throw error;
@@ -765,7 +774,7 @@ class ScaffoldService {
       },
       new_data: {
         assembly_status: assemblyStatus,
-        card_status: assemblyStatus === 'disassembled' ? 'red' : updated.card_status,
+        card_status: assemblyStatus === 'disassembled' ? null : updated.card_status,
         disassembly_image: disassemblyImageUrl,
       },
       description: `Estado cambiado de ${scaffold.assembly_status} a ${assemblyStatus}`,
@@ -816,7 +825,7 @@ class ScaffoldService {
     const query = `
       UPDATE scaffolds 
       SET assembly_status = 'disassembled', 
-          card_status = 'red',
+          card_status = NULL,
           disassembly_image_url = $1,
           disassembly_notes = $2,
           disassembled_at = NOW(),
@@ -839,7 +848,7 @@ class ScaffoldService {
       },
       new_data: {
         assembly_status: 'disassembled',
-        card_status: 'red',
+        card_status: null,
         disassembly_image: disassemblyImageUrl,
         disassembly_notes: disassemblyNotes || null,
       },

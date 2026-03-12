@@ -44,7 +44,7 @@ export interface Scaffold {
   id: number;
   project_id?: number;
   // Nuevos campos de estado
-  card_status: 'green' | 'red'; // Nuevo: estado de la tarjeta
+  card_status: 'green' | 'red' | null; // Desarmado: sin tarjeta activa
   assembly_status: 'assembled' | 'in_progress' | 'disassembled'; // Nuevo: estado de armado (3 estados)
   initial_image: string; // Nuevo: imagen inicial obligatoria (antes assembly_image_url)
   disassembly_image?: string; // Nuevo: imagen de desarmado (nullable)
@@ -102,7 +102,7 @@ export interface Report {
  * Define los campos que pueden cambiar en un andamio
  */
 export interface ScaffoldChangeData {
-  card_status?: 'green' | 'red';
+  card_status?: 'green' | 'red' | null;
   assembly_status?: 'assembled' | 'in_progress' | 'disassembled';
   progress_percentage?: number;
   cubic_meters?: number;

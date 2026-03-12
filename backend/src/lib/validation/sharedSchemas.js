@@ -160,8 +160,9 @@ const assemblyStatus = Joi.string()
 // Estado de tarjeta
 const cardStatus = Joi.string()
   .valid('green', 'red')
+  .allow(null)
   .messages({
-    'any.only': 'El estado de tarjeta debe ser green o red',
+    'any.only': 'El estado de tarjeta debe ser green, red o null',
   });
 
 // Porcentaje (0-100)

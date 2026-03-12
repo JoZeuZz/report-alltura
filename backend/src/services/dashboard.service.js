@@ -59,6 +59,9 @@ class DashboardService {
         inProgressScaffolds: parseInt(scaffoldStats.in_progress_count, 10) || 0,
         greenCards: parseInt(scaffoldStats.green_cards_count, 10) || 0,
         redCards: parseInt(scaffoldStats.red_cards_count, 10) || 0,
+        disassembledWithoutCardScaffolds:
+          parseInt(scaffoldStats.disassembled_without_card_count, 10) || 0,
+        activeCardsTotal: parseInt(scaffoldStats.active_cards_total, 10) || 0,
 
         // Andamios recientes
         recentScaffoldsCount,
@@ -123,8 +126,10 @@ class DashboardService {
           COUNT(CASE WHEN assembly_status = 'assembled' THEN 1 END)::int as assembled_scaffolds,
           COUNT(CASE WHEN assembly_status = 'disassembled' THEN 1 END)::int as disassembled_scaffolds,
           COUNT(CASE WHEN assembly_status = 'in_progress' THEN 1 END)::int as in_progress_scaffolds,
-          COUNT(CASE WHEN card_status = 'green' THEN 1 END)::int as green_cards,
-          COUNT(CASE WHEN card_status = 'red' THEN 1 END)::int as red_cards
+          COUNT(CASE WHEN assembly_status <> 'disassembled' AND card_status = 'green' THEN 1 END)::int as green_cards,
+          COUNT(CASE WHEN assembly_status <> 'disassembled' AND card_status = 'red' THEN 1 END)::int as red_cards,
+          COUNT(CASE WHEN assembly_status = 'disassembled' THEN 1 END)::int as disassembled_without_card_scaffolds,
+          COUNT(CASE WHEN assembly_status <> 'disassembled' AND card_status IN ('green', 'red') THEN 1 END)::int as active_cards_total
         FROM scaffolds
         WHERE project_id = $1`,
         [projectId]
@@ -206,6 +211,9 @@ class DashboardService {
         inProgressScaffolds: scaffoldStats.in_progress_scaffolds || 0,
         greenCards: scaffoldStats.green_cards || 0,
         redCards: scaffoldStats.red_cards || 0,
+        disassembledWithoutCardScaffolds:
+          scaffoldStats.disassembled_without_card_scaffolds || 0,
+        activeCardsTotal: scaffoldStats.active_cards_total || 0,
 
         // Métricas adicionales
         recentScaffoldsCount: recentCount || 0,
@@ -253,8 +261,10 @@ class DashboardService {
         COUNT(*) FILTER (WHERE assembly_status = 'assembled') as assembled_count,
         COUNT(*) FILTER (WHERE assembly_status = 'disassembled') as disassembled_count,
         COUNT(*) as total_count,
-        COUNT(*) FILTER (WHERE card_status = 'green') as green_cards_count,
-        COUNT(*) FILTER (WHERE card_status = 'red') as red_cards_count
+        COUNT(*) FILTER (WHERE assembly_status <> 'disassembled' AND card_status = 'green') as green_cards_count,
+        COUNT(*) FILTER (WHERE assembly_status <> 'disassembled' AND card_status = 'red') as red_cards_count,
+        COUNT(*) FILTER (WHERE assembly_status = 'disassembled') as disassembled_without_card_count,
+        COUNT(*) FILTER (WHERE assembly_status <> 'disassembled' AND card_status IN ('green', 'red')) as active_cards_total
       FROM scaffolds
     `;
 
@@ -270,6 +280,9 @@ class DashboardService {
       total_count: parseInt(stats.total_count, 10) || 0,
       green_cards_count: parseInt(stats.green_cards_count, 10) || 0,
       red_cards_count: parseInt(stats.red_cards_count, 10) || 0,
+      disassembled_without_card_count:
+        parseInt(stats.disassembled_without_card_count, 10) || 0,
+      active_cards_total: parseInt(stats.active_cards_total, 10) || 0,
     };
   }
 
@@ -288,8 +301,10 @@ class DashboardService {
         COUNT(*) FILTER (WHERE assembly_status = 'disassembled') as disassembled_count,
         COUNT(*) FILTER (WHERE assembly_status = 'in_progress') as in_progress_count,
         COUNT(*) as total_scaffolds,
-        COUNT(*) FILTER (WHERE card_status = 'green') as green_cards_count,
-        COUNT(*) FILTER (WHERE card_status = 'red') as red_cards_count
+        COUNT(*) FILTER (WHERE assembly_status <> 'disassembled' AND card_status = 'green') as green_cards_count,
+        COUNT(*) FILTER (WHERE assembly_status <> 'disassembled' AND card_status = 'red') as red_cards_count,
+        COUNT(*) FILTER (WHERE assembly_status = 'disassembled') as disassembled_without_card_count,
+        COUNT(*) FILTER (WHERE assembly_status <> 'disassembled' AND card_status IN ('green', 'red')) as active_cards_total
       FROM scaffolds
     `;
 

@@ -155,10 +155,10 @@ const ScaffoldDetailsModal: React.FC<ScaffoldDetailsModalProps> = ({
 
     try {
       setUploadingDocType(type);
-      const updated = await uploadScaffoldTechnicalDocuments(scaffold.id, {
+      const updated = (await uploadScaffoldTechnicalDocuments(scaffold.id, {
         modulationPdf: type === 'modulation' ? file : undefined,
         calculationMemoryPdf: type === 'calculation_memory' ? file : undefined,
-      });
+      })) as Partial<Scaffold>;
 
       setModulationPdfUrl(updated?.modulation_pdf_url || null);
       setCalculationMemoryPdfUrl(updated?.calculation_memory_pdf_url || null);
@@ -188,7 +188,7 @@ const ScaffoldDetailsModal: React.FC<ScaffoldDetailsModalProps> = ({
 
     try {
       setRemovingDocType(type);
-      const updated = await deleteScaffoldTechnicalDocument(scaffold.id, type);
+      const updated = (await deleteScaffoldTechnicalDocument(scaffold.id, type)) as Partial<Scaffold>;
       setModulationPdfUrl(updated?.modulation_pdf_url || null);
       setCalculationMemoryPdfUrl(updated?.calculation_memory_pdf_url || null);
       toast.success(
@@ -244,10 +244,9 @@ const ScaffoldDetailsModal: React.FC<ScaffoldDetailsModalProps> = ({
 
   const handleToggleCardStatus = async () => {
     if (!canEdit || isUpdating) return;
-    
-    // Validación: No permitir tarjeta verde si está desarmado
-    if (assemblyStatus === 'disassembled' && cardStatus === 'red') {
-      alert('Un andamio desarmado no puede tener tarjeta verde. Primero debes armarlo.');
+
+    if (assemblyStatus === 'disassembled') {
+      alert('Un andamio desarmado no tiene tarjeta activa.');
       return;
     }
     
@@ -308,6 +307,18 @@ const ScaffoldDetailsModal: React.FC<ScaffoldDetailsModalProps> = ({
       setIsUpdating(false);
     }
   };
+
+  const isCardApplicable = assemblyStatus !== 'disassembled';
+  const cardStatusLabel = !isCardApplicable
+    ? 'No aplica (Desarmado)'
+    : cardStatus === 'green'
+    ? 'Tarjeta Verde ✓'
+    : 'Tarjeta Roja ✗';
+  const cardStatusClass = !isCardApplicable
+    ? 'bg-gray-100 text-gray-700'
+    : cardStatus === 'green'
+    ? 'bg-green-100 text-green-800'
+    : 'bg-red-100 text-red-800';
 
   const handleCancelProgressEdit = () => {
     setTempProgress(progressPercentage);
@@ -437,7 +448,7 @@ const ScaffoldDetailsModal: React.FC<ScaffoldDetailsModalProps> = ({
                 <div className="flex-1">
                   <span className="font-semibold text-gray-700 block mb-1">Estado de Tarjeta</span>
                   <span className="text-sm text-gray-500">
-                    {cardStatus === 'green' ? 'Tarjeta Verde ✓' : 'Tarjeta Roja ✗'}
+                    {cardStatusLabel}
                   </span>
                   {(assemblyStatus !== 'assembled' || progressPercentage !== 100) && (
                     <span className="block text-xs text-red-600 mt-1">
@@ -454,7 +465,9 @@ const ScaffoldDetailsModal: React.FC<ScaffoldDetailsModalProps> = ({
                     className="sr-only peer"
                   />
                   <div className={`w-14 h-7 rounded-full transition-all duration-300 ${
-                    cardStatus === 'green' 
+                    !isCardApplicable
+                      ? 'bg-gray-400'
+                      : cardStatus === 'green' 
                       ? 'bg-green-500' 
                       : 'bg-red-500'
                   } ${(isUpdating || assemblyStatus !== 'assembled' || progressPercentage !== 100) ? 'opacity-50' : ''}`}></div>
@@ -811,12 +824,8 @@ const ScaffoldDetailsModal: React.FC<ScaffoldDetailsModalProps> = ({
           </div>
           <div>
             <span className="text-gray-600 text-sm">Estado de Tarjeta:</span>
-            <span className={`ml-2 px-3 py-1 text-sm font-semibold rounded-full ${
-              cardStatus === 'green' 
-                ? 'bg-green-100 text-green-800' 
-                : 'bg-red-100 text-red-800'
-            }`}>
-              {cardStatus === 'green' ? 'Tarjeta Verde ✓' : 'Tarjeta Roja ✗'}
+            <span className={`ml-2 px-3 py-1 text-sm font-semibold rounded-full ${cardStatusClass}`}>
+              {cardStatusLabel}
             </span>
           </div>
           {scaffold.assembly_notes && (

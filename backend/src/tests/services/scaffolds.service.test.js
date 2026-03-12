@@ -49,10 +49,10 @@ describe('ScaffoldService', () => {
   });
 
   describe('determineAssemblyState', () => {
-    it('debe mapear 0 a disassembled con tarjeta roja', () => {
+    it('debe mapear 0 a disassembled sin tarjeta', () => {
       expect(ScaffoldService.determineAssemblyState(0)).toEqual({
         assembly_status: 'disassembled',
-        card_status: 'red',
+        card_status: null,
       });
     });
 
@@ -126,7 +126,7 @@ describe('ScaffoldService', () => {
           scaffold_number: '1',
           permit_number: 'PERM-001',
           assembly_image_url: 'https://gcs/img.png',
-          card_status: 'red',
+          card_status: null,
           assembly_status: 'disassembled',
         }),
         mockClient
@@ -170,7 +170,7 @@ describe('ScaffoldService', () => {
       Scaffold.updateAssemblyStatus.mockResolvedValue({
         id: 1,
         assembly_status: 'disassembled',
-        card_status: 'red',
+        card_status: null,
       });
       ScaffoldHistory.create.mockResolvedValue({});
 

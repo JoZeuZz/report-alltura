@@ -49,14 +49,27 @@ export default function ScaffoldGrid({
           >
             {/* Indicador de tarjeta - Esquina superior izquierda */}
             <div className="absolute top-3 left-3 z-10">
-              <div
-                className={`w-6 h-6 rounded-full shadow-lg border-2 border-white ${
-                  scaffold.card_status === 'green' 
-                    ? 'bg-green-500' 
-                    : 'bg-red-500'
-                }`}
-                title={scaffold.card_status === 'green' ? 'Tarjeta Verde - Habilitado' : 'Tarjeta Roja - No Habilitado'}
-              />
+              {(() => {
+                const isDisassembled = scaffold.assembly_status === 'disassembled';
+                const isGreen = scaffold.card_status === 'green';
+                const colorClass = isDisassembled
+                  ? 'bg-gray-400'
+                  : isGreen
+                  ? 'bg-green-500'
+                  : 'bg-red-500';
+                const title = isDisassembled
+                  ? 'Desarmado - Sin tarjeta activa'
+                  : isGreen
+                  ? 'Tarjeta Verde - Habilitado'
+                  : 'Tarjeta Roja - No Habilitado';
+
+                return (
+                  <div
+                    className={`w-6 h-6 rounded-full shadow-lg border-2 border-white ${colorClass}`}
+                    title={title}
+                  />
+                );
+              })()}
             </div>
 
             {selectable && onToggleSelect && (
@@ -191,7 +204,7 @@ export default function ScaffoldGrid({
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        onToggleCard(scaffold.id, scaffold.card_status);
+                        onToggleCard(scaffold.id, scaffold.card_status === 'green' ? 'green' : 'red');
                       }}
                       className={`w-full px-4 py-2.5 rounded-lg text-sm font-semibold transition-all transform active:scale-95 flex items-center justify-center gap-2 ${
                         scaffold.card_status === 'green'

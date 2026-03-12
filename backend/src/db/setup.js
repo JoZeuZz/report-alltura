@@ -74,7 +74,7 @@ const setupDatabase = async () => {
           height DECIMAL NOT NULL,
           cubic_meters DECIMAL NOT NULL,
           progress_percentage INTEGER NOT NULL DEFAULT 100 CHECK(progress_percentage >= 0 AND progress_percentage <= 100),
-          card_status VARCHAR(50) NOT NULL DEFAULT 'green' CHECK(card_status IN ('green', 'red')),
+          card_status VARCHAR(50) DEFAULT NULL CHECK(card_status IN ('green', 'red')),
           assembly_status VARCHAR(50) NOT NULL DEFAULT 'assembled' CHECK(assembly_status IN ('assembled', 'disassembled')),
           assembly_image_url VARCHAR(255) NOT NULL,
           assembly_notes TEXT,
@@ -107,7 +107,7 @@ const setupDatabase = async () => {
     await client.query(`ALTER TABLE scaffolds ADD COLUMN IF NOT EXISTS scaffold_number VARCHAR(255)`);
     await client.query(`ALTER TABLE scaffolds ADD COLUMN IF NOT EXISTS area VARCHAR(255)`);
     await client.query(`ALTER TABLE scaffolds ADD COLUMN IF NOT EXISTS tag VARCHAR(255)`);
-    await client.query(`ALTER TABLE scaffolds ADD COLUMN IF NOT EXISTS card_status VARCHAR(50) DEFAULT 'green'`);
+    await client.query(`ALTER TABLE scaffolds ADD COLUMN IF NOT EXISTS card_status VARCHAR(50)`);
     await client.query(`ALTER TABLE scaffolds ADD COLUMN IF NOT EXISTS assembly_status VARCHAR(50) DEFAULT 'assembled'`);
     await client.query(`ALTER TABLE scaffolds ADD COLUMN IF NOT EXISTS location TEXT`);
     await client.query(`ALTER TABLE scaffolds ADD COLUMN IF NOT EXISTS observations TEXT`);

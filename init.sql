@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS scaffolds (
     height DECIMAL NOT NULL,
     cubic_meters DECIMAL NOT NULL,
     progress_percentage INTEGER NOT NULL DEFAULT 100 CHECK(progress_percentage >= 0 AND progress_percentage <= 100),
-    card_status VARCHAR(50) NOT NULL DEFAULT 'green' CHECK(card_status IN ('green', 'red')),
+    card_status VARCHAR(50) DEFAULT NULL CHECK(card_status IN ('green', 'red')),
     assembly_status VARCHAR(50) NOT NULL DEFAULT 'assembled' CHECK(assembly_status IN ('assembled', 'disassembled')),
     assembly_image_url VARCHAR(255) NOT NULL,
     modulation_pdf_url VARCHAR(500),

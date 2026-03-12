@@ -28,7 +28,7 @@ const Scaffold = {
       assembly_image_url,
       modulation_pdf_url,
       calculation_memory_pdf_url,
-      card_status = 'red', // Por defecto: tarjeta roja
+      card_status = null, // Desarmado no tiene tarjeta por defecto
       assembly_status = 'disassembled', // Por defecto: desarmado
       location,
       observations,
@@ -243,10 +243,10 @@ const Scaffold = {
     let values;
 
     if (assemblyStatus === 'disassembled' && disassemblyImage) {
-      // Al desarmar, automáticamente cambiar tarjeta a roja
+      // Al desarmar, el andamio queda sin tarjeta asignada
       query = `
         UPDATE scaffolds 
-        SET assembly_status = $1, disassembly_image_url = $2, card_status = 'red', 
+        SET assembly_status = $1, disassembly_image_url = $2, card_status = NULL, 
             disassembled_at = NOW(), updated_at = NOW() 
         WHERE id = $3 
         RETURNING *

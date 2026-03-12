@@ -59,19 +59,20 @@ const COL_MIN_WIDTH = 60;  // ancho mínimo al hacer resize
 const assemblyBadge: Record<string, { label: string; classes: string }> = {
   assembled:    { label: 'Armado',     classes: 'bg-green-100 text-green-800' },
   in_progress:  { label: 'En Proceso', classes: 'bg-amber-100 text-amber-800' },
-  disassembled: { label: 'Desarmado',  classes: 'bg-red-100 text-red-800' },
+  disassembled: { label: 'Desarmado',  classes: 'bg-gray-100 text-gray-700' },
 };
 
 const cardBadge: Record<string, { label: string; classes: string }> = {
   green: { label: 'Verde', classes: 'bg-green-100 text-green-700' },
   red:   { label: 'Roja',  classes: 'bg-red-100 text-red-700' },
+  none:  { label: 'Desarmado', classes: 'bg-gray-100 text-gray-700' },
 };
 
 function rowBorderColor(status: string): string {
   switch (status) {
     case 'assembled':    return 'border-l-green-400';
     case 'in_progress':  return 'border-l-amber-400';
-    case 'disassembled': return 'border-l-red-400';
+    case 'disassembled': return 'border-l-gray-400';
     default:             return 'border-l-gray-200';
   }
 }
@@ -305,8 +306,13 @@ const ScaffoldTableView: React.FC<ScaffoldTableViewProps> = ({
                   label: scaffold.assembly_status,
                   classes: 'bg-gray-100 text-gray-700',
                 };
-                const crdBadge = cardBadge[scaffold.card_status] ?? {
-                  label: scaffold.card_status,
+                const cardBadgeKey =
+                  scaffold.assembly_status === 'disassembled'
+                    ? 'none'
+                    : scaffold.card_status || 'none';
+
+                const crdBadge = cardBadge[cardBadgeKey] ?? {
+                  label: cardBadgeKey,
                   classes: 'bg-gray-100 text-gray-700',
                 };
 

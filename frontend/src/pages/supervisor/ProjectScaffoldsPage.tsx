@@ -118,7 +118,7 @@ const ProjectScaffoldsPage: React.FC = () => {
       // Actualizar estado local
       setScaffolds(scaffolds.map(s => 
         s.id === scaffoldToDisassemble 
-          ? { ...s, assembly_status: 'disassembled', card_status: 'red', progress_percentage: 0 } 
+          ? { ...s, assembly_status: 'disassembled', card_status: null, progress_percentage: 0 } 
           : s
       ));
       

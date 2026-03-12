@@ -848,8 +848,17 @@ async function drawScaffoldCard(doc, x, y, width, height, scaffold, number) {
     .text(statusText, rightX - 210, badgeY + 5, { width: 90, align: 'center' });
 
   // Badge de tarjeta
-  const cardColor = scaffold.card_status === 'green' ? '#059669' : COLORS.danger;
-  const cardText = scaffold.card_status === 'green' ? 'VERDE' : 'ROJA';
+  const isDisassembled = scaffold.assembly_status === 'disassembled';
+  const cardColor = isDisassembled
+    ? '#6b7280'
+    : scaffold.card_status === 'green'
+    ? '#059669'
+    : COLORS.danger;
+  const cardText = isDisassembled
+    ? 'DESARMADO'
+    : scaffold.card_status === 'green'
+    ? 'VERDE'
+    : 'ROJA';
 
   doc
     .fillColor(cardColor)
@@ -1244,8 +1253,8 @@ function calculateStatistics(scaffolds) {
       stats.disassembledM3 += m3;
     }
 
-    if (s.card_status === 'green') stats.greenCards++;
-    if (s.card_status === 'red') stats.redCards++;
+    if (s.assembly_status !== 'disassembled' && s.card_status === 'green') stats.greenCards++;
+    if (s.assembly_status !== 'disassembled' && s.card_status === 'red') stats.redCards++;
   });
 
   return stats;
