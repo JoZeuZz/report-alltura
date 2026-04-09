@@ -5,7 +5,10 @@ node_modules
 .coolify/
 postgres-data/
 .github/
-docs/
+docs/*
+!docs/standardization/
+docs/standardization/*
+!docs/standardization/alltura-shell-boundary.md
 dist/
 legacy/
 # Credenciales GCP reales (nunca versionar)

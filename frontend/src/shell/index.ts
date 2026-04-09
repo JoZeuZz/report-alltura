@@ -29,3 +29,10 @@ export { performanceService } from './services/performanceService';
 
 export * from './utils/tourSteps';
 export * from './utils/imageProcessing';
+
+// Shell formal: componentes de metricas con ubicacion transitoria fuera de src/shell.
+export {
+  MetricCard,
+  StatsCard,
+  ProjectDashboard,
+} from '../components/dashboard';
