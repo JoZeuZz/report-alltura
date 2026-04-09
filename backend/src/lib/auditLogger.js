@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const config = require('../config');
 const { logger } = require('./logger');
 
 /**
@@ -8,7 +9,7 @@ const { logger } = require('./logger');
  * Complementa a Winston logger con auditoría en archivos específicos
  */
 
-const LOG_DIR = path.join(__dirname, '../logs');
+const LOG_DIR = config.LOGGING.DIR;
 const AUDIT_LOG_FILE = path.join(LOG_DIR, 'audit.log');
 const ERROR_LOG_FILE = path.join(LOG_DIR, 'error.log');
 const ACCESS_LOG_FILE = path.join(LOG_DIR, 'access.log');

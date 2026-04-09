@@ -1,13 +1,13 @@
 import React, { useEffect } from 'react';
 import { RouterProvider } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import { AuthProvider } from './context/AuthContext';
-import { TourProvider } from './context/TourContext';
+import { AuthProvider } from '@/shell/context/AuthContext';
+import { TourProvider } from '@/shell/context/TourContext';
 import { router } from './router';
 
 // Servicios
-import { notificationService } from './services/notificationService';
-import { performanceService } from './services/performanceService';
+import { notificationService } from '@/shell/services/notificationService';
+import { performanceService } from '@/shell/services/performanceService';
 
 const AppContent: React.FC = () => {
   useEffect(() => {

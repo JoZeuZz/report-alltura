@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { useLoaderData, useNavigate, useParams, useRevalidator } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import Modal from '../../components/Modal';
+import Modal from '@/shell/components/Modal';
 import ScaffoldDetailsModal from '../../components/ScaffoldDetailsModal';
 import { ProjectDashboard } from '../../components/dashboard';
 import ScaffoldTableView from '../../components/ScaffoldTableView';
 import { Project, Scaffold } from '../../types/api';
-import ImageWithFallback from '../../components/ImageWithFallback';
+import ImageWithFallback from '@/shell/components/ImageWithFallback';
 import { buildImageUrl } from '../../utils/image';
-import { apiService } from '../../services/apiService';
+import { apiService } from '@/shell/services/apiService';
 import { formatCubicMeters } from '../../utils/format';
 
 type ViewMode = 'dashboard' | 'cards' | 'table';

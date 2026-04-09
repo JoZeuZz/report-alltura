@@ -1,8 +1,8 @@
 import React from 'react';
 import { Link, useLoaderData } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '@/shell/context/AuthContext';
 import { Project } from '../../types/api';
-import { ResponsiveGrid } from '../../components/layout';
+import { ResponsiveGrid } from '@/shell/layout';
 import { formatNameParts } from '../../utils/name';
 
 /**

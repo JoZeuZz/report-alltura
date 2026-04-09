@@ -9,7 +9,7 @@ import {
   reopenClientNote,
   deleteClientNote,
   getUnresolvedProjectNotes,
-} from '../services/apiService';
+} from '@/shell/services/apiService';
 import type {
   ClientNote,
   CreateClientNoteDTO,

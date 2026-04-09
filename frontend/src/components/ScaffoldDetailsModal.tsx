@@ -1,17 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { Scaffold } from '../types/api';
-import ConfirmationModal from './ConfirmationModal';
+import ConfirmationModal from '@/shell/components/ConfirmationModal';
 import ScaffoldTimeline from './ScaffoldTimeline';
 import AddModificationModal from './AddModificationModal';
 import ModificationsList from './ModificationsList';
 import ClientNotesList from './ClientNotesList';
 import { useScaffoldModifications } from '../hooks/useScaffoldModifications';
 import { useClientNotes } from '../hooks/useClientNotes';
-import { put, uploadScaffoldTechnicalDocuments, deleteScaffoldTechnicalDocument } from '../services/apiService';
+import { put, uploadScaffoldTechnicalDocuments, deleteScaffoldTechnicalDocument } from '@/shell/services/apiService';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import ImageWithFallback from './ImageWithFallback';
+import { useAuth } from '@/shell/context/AuthContext';
+import ImageWithFallback from '@/shell/components/ImageWithFallback';
 import { buildImageUrl } from '../utils/image';
 import { formatCubicMeters, formatFixedNumber } from '../utils/format';
 

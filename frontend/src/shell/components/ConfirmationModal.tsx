@@ -1,7 +1,7 @@
 import Modal from './Modal';
 import { ReactNode } from 'react';
-import WarningIcon from './icons/WarningIcon';
-import InfoIcon from './icons/InfoIcon';
+import WarningIcon from '../../components/icons/WarningIcon';
+import InfoIcon from '../../components/icons/InfoIcon';
 
 interface ConfirmationModalProps {
   isOpen: boolean;

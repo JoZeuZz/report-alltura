@@ -2,18 +2,18 @@ import React, { useState, useRef } from 'react';
 import { useParams, useNavigate, useLoaderData, useRevalidator } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { Project, Scaffold } from '../../types/api';
-import Modal from '../../components/Modal';
+import Modal from '@/shell/components/Modal';
 import ScaffoldGrid from '../../components/ScaffoldGrid';
 import ScaffoldDetailsModal from '../../components/ScaffoldDetailsModal';
-import UploadProgress, { UploadStage } from '../../components/UploadProgress';
-import { apiService, uploadWithProgress } from '../../services/apiService';
-import { useAuth } from '../../context/AuthContext';
+import UploadProgress, { UploadStage } from '@/shell/components/UploadProgress';
+import { apiService, uploadWithProgress } from '@/shell/services/apiService';
+import { useAuth } from '@/shell/context/AuthContext';
 import {
   processImageFile,
   formatBytes,
   ImageProcessingResult,
   ALLOWED_IMAGE_ACCEPT,
-} from '../../utils/imageProcessing';
+} from '@/shell/utils/imageProcessing';
 
 interface LoaderData {
   project: Project;

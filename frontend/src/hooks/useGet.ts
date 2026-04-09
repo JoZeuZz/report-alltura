@@ -1,6 +1,6 @@
 // filepath: src/hooks/useGet.ts
 import { useQuery, UseQueryOptions } from '@tanstack/react-query';
-import { get } from '../services/apiService';
+import { get } from '@/shell/services/apiService';
 
 type QueryKey = string | readonly unknown[];
 

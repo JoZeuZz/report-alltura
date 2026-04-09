@@ -1,14 +1,17 @@
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
-import type { InAppNotification } from '../types/clientNotes';
+import type { InAppNotification } from '@/types/clientNotes';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '@/shell/context/AuthContext';
+import { useMemo } from 'react';
 
 interface NotificationItemProps {
   notification: InAppNotification;
   onMarkAsRead: (id: number) => Promise<void>;
   onDelete: (id: number) => Promise<void>;
+  variant?: 'default' | 'compact';
   compact?: boolean;
+  onInteractionEnd?: () => void;
 }
 
 const notificationIcons: Record<string, string> = {
@@ -35,10 +38,13 @@ export default function NotificationItem({
   notification,
   onMarkAsRead,
   onDelete,
+  variant = 'default',
   compact = false,
+  onInteractionEnd,
 }: NotificationItemProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const isCompact = variant === 'compact' || compact;
 
   // Convertir link genérico a link específico del rol
   const getNavigationLink = (): string | null => {
@@ -103,7 +109,14 @@ export default function NotificationItem({
     return notification.link;
   };
 
+  const navigationLink = useMemo(getNavigationLink, [notification.link, notification.metadata, user?.role]);
+  const isInteractive = !notification.is_read || navigationLink !== null;
+
   const handleClick = async () => {
+    if (!isInteractive) {
+      return;
+    }
+
     if (!notification.is_read) {
       try {
         await onMarkAsRead(notification.id);
@@ -112,9 +125,21 @@ export default function NotificationItem({
       }
     }
 
-    const link = getNavigationLink();
-    if (link) {
-      navigate(link);
+    if (navigationLink) {
+      navigate(navigationLink);
+    }
+
+    onInteractionEnd?.();
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (!isInteractive) {
+      return;
+    }
+
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      void handleClick();
     }
   };
 
@@ -131,15 +156,19 @@ export default function NotificationItem({
   const colorClass = notification.is_read
     ? 'bg-white'
     : notificationColors[notification.type] || 'bg-gray-50';
-  
-  const hasValidLink = getNavigationLink() !== null;
 
   return (
     <div
-      onClick={handleClick}
+      onClick={() => {
+        void handleClick();
+      }}
+      onKeyDown={handleKeyDown}
+      role={isInteractive ? 'button' : undefined}
+      tabIndex={isInteractive ? 0 : undefined}
+      aria-label={`Notificación: ${notification.title}`}
       className={`${colorClass} ${
-        hasValidLink ? 'cursor-pointer hover:bg-gray-100' : ''
-      } ${compact ? 'px-3 py-2.5 sm:px-4 sm:py-3' : 'p-3 sm:p-4 border rounded-lg'} transition-colors relative group`}
+        isInteractive ? 'cursor-pointer hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-blue focus:ring-inset' : ''
+      } ${isCompact ? 'px-3 py-2.5 sm:px-4 sm:py-3' : 'p-3 sm:p-4 border rounded-lg'} transition-colors relative group`}
     >
       <div className="flex items-start gap-2.5 sm:gap-3">
         {/* Icon */}
@@ -175,7 +204,7 @@ export default function NotificationItem({
         </div>
 
         {/* Delete button (visible on hover) */}
-        {!compact && (
+        {!isCompact && (
           <button
             onClick={handleDelete}
             className="opacity-0 sm:group-hover:opacity-100 sm:opacity-0 opacity-100 transition-opacity text-gray-400 hover:text-red-600 p-1 flex-shrink-0"

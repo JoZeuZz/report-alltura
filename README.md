@@ -404,6 +404,12 @@ Auditoría completa de modificaciones
 - **Redis:** v6 o superior (para autenticación)
 - **Google Cloud:** Cuenta con Cloud Storage configurado
 
+### Convención Docker Compose
+
+- **`docker-compose.dev.yml`**: entorno local de desarrollo (DB/Redis con puertos en host)
+- **`docker-compose.yml`**: despliegue (Coolify/Cloudflare, sin exponer DB/Redis públicamente)
+- **`db/init/001-init.sql`**: fuente canónica única para la inicialización SQL de PostgreSQL
+
 ### 1. Clonar el Repositorio
 
 ```bash
@@ -422,15 +428,32 @@ Este comando instalará las dependencias en:
 - Backend (`/backend`)
 - Frontend (`/frontend`)
 
-### 3. Configurar Base de Datos
+### 3. Configurar Base de Datos y Redis
 
-#### Opción A: Docker (Recomendado)
+#### Opción A: Docker Local (Recomendado)
 
 ```bash
 npm run db:up
 ```
 
-Esto levantará PostgreSQL en `localhost:5432`
+Esto levantará PostgreSQL en `localhost:5432` y Redis en `localhost:6379` usando `docker-compose.dev.yml`.
+La inicialización SQL en Docker local se ejecuta desde `db/init/001-init.sql`.
+`init.sql` (raíz) queda solo como wrapper de compatibilidad para ejecuciones manuales.
+
+Comandos útiles:
+
+```bash
+npm run db:logs
+npm run db:down
+```
+
+Si necesitas re-inicializar la base desde cero en local (eliminando datos existentes):
+
+```bash
+npm run db:down
+rm -rf postgres-data
+npm run db:up
+```
 
 #### Opción B: PostgreSQL Local
 
@@ -469,8 +492,14 @@ Este script creará todas las tablas y sembrará usuarios de prueba:
 ```env
 GCS_PROJECT_ID=tu-gcp-project-id
 GCS_BUCKET_NAME=tu-gcs-bucket-name
-GOOGLE_APPLICATION_CREDENTIALS=./config/service-account-key.json
+GOOGLE_APPLICATION_CREDENTIALS=/ruta/externa/a/service-account.json
 ```
+
+Política de credenciales GCP (estándar Alltura):
+- Se versiona únicamente `backend/service-account.example.json` (plantilla sin secretos reales).
+- El archivo real de credenciales **no se versiona** y debe mantenerse fuera del árbol de la app.
+- En deploy con Docker/Coolify se monta como secreto externo en runtime: `/data/coolify/secrets/gcs/service-account.json:/app/service-account.json:ro`.
+- En ese flujo, `GOOGLE_APPLICATION_CREDENTIALS` debe resolver a `/app/service-account.json`.
 
 ### 6. Configurar Autenticación JWT
 
@@ -509,7 +538,7 @@ REDIS_URL=redis://localhost:6379
 # Google Cloud Storage
 GCS_PROJECT_ID=tu-gcp-project-id
 GCS_BUCKET_NAME=tu-gcs-bucket-name
-GOOGLE_APPLICATION_CREDENTIALS=./config/service-account-key.json
+GOOGLE_APPLICATION_CREDENTIALS=/ruta/externa/a/service-account.json
 IMAGE_MAX_BYTES=26214400
 IMAGE_STRIP_METADATA=true
 IMAGE_JPEG_QUALITY=92
@@ -570,6 +599,9 @@ npm run db:up
 
 # Ver logs de base de datos
 npm run db:logs
+
+# Detener servicios de base de datos local
+npm run db:down
 ```
 
 ### Backend (`/backend`)
@@ -750,7 +782,8 @@ npm run type-check
 │   ├── PHASE_2_AUTHENTICATION_HARDENING.md
 │   └── PHASE_3_INPUT_VALIDATION.md
 │
-├── docker-compose.yml     # Configuración Docker
+├── docker-compose.dev.yml # Configuración Docker local (desarrollo)
+├── docker-compose.yml     # Configuración Docker de despliegue (Coolify/Cloudflare)
 ├── package.json           # Configuración monorepo
 └── README.md             # Este archivo
 ```
@@ -847,9 +880,10 @@ npm run install:all
     Alternativamente, si prefieres usar Docker para levantar PostgreSQL, desde la raíz del proyecto ejecuta:
 
     ```bash
-    docker-compose up -d
+    npm run db:up
     ```
-    Esto levantará un contenedor PostgreSQL y mapeará el puerto `5432` del contenedor al `localhost` del host, así tu `DB_HOST=localhost` seguirá funcionando.
+    Esto levantará PostgreSQL (`localhost:5432`) y Redis (`localhost:6379`) usando `docker-compose.dev.yml`, así `DB_HOST=localhost` seguirá funcionando para backend ejecutado localmente.
+    El bootstrap SQL canónico en Docker se toma desde `db/init/001-init.sql`.
 
 ### 4. Configuración de Google Cloud Storage (GCS)
 
@@ -864,8 +898,13 @@ Para la subida de imágenes, necesitas configurar una cuenta de Google Cloud:
     ```
     GCS_PROJECT_ID=tu-gcp-project-id
     GCS_BUCKET_NAME=tu-gcs-bucket-name
-    GOOGLE_APPLICATION_CREDENTIALS=./ruta/a/tu/service-account-key.json
+    GOOGLE_APPLICATION_CREDENTIALS=/ruta/externa/a/service-account.json
     ```
+
+  Reglas operativas:
+  - Se versiona solo `backend/service-account.example.json`.
+  - El archivo real no se versiona y debe quedar fuera del árbol del proyecto.
+  - En Docker/Coolify, monta el secreto externo a `/app/service-account.json` y usa esa ruta en `GOOGLE_APPLICATION_CREDENTIALS`.
 
 6.  (Opcional) Para forzar el uso de GCS y evitar que se guarden imágenes en `/uploads`, añade:
 
@@ -898,7 +937,7 @@ Si tu organización bloquea la creación de claves de cuentas de servicio, puede
 4. Configura en `backend/.env`:
 
    ```
-   GOOGLE_APPLICATION_CREDENTIALS=./gcp-wif-credentials.json
+  GOOGLE_APPLICATION_CREDENTIALS=/ruta/externa/a/gcp-wif-credentials.json
    ```
 
 > Nota: el `token.txt` debe contener un JWT válido emitido por tu proveedor OIDC (por ejemplo, tu IdP). Google recomienda este enfoque sobre claves JSON en entornos productivos.
@@ -932,7 +971,7 @@ npm run db:up
 or
 
 ```bash
-docker-compose up -d
+docker compose -f docker-compose.dev.yml up -d postgres_db redis
 ```
 
 

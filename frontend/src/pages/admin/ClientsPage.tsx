@@ -3,10 +3,10 @@ import { useLoaderData, useActionData, useSubmit, useNavigate } from 'react-rout
 import toast from 'react-hot-toast';
 import { Client } from '../../types/api';
 import ClientForm from '../../components/ClientForm';
-import Modal from '../../components/Modal';
-import ConfirmationModal from '../../components/ConfirmationModal';
+import Modal from '@/shell/components/Modal';
+import ConfirmationModal from '@/shell/components/ConfirmationModal';
 import { ClientCard } from '../../components/cards';
-import { ResponsiveGrid } from '../../components/layout';
+import { ResponsiveGrid } from '@/shell/layout';
 import { useBreakpoints } from '../../hooks';
 
 const ClientsPage: React.FC = () => {

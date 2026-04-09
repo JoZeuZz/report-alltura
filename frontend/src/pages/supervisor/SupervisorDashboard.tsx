@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useLoaderData } from 'react-router-dom';
 import { Project } from '../../types/api';
-import { ResponsiveGrid } from '../../components/layout';
+import { ResponsiveGrid } from '@/shell/layout';
 import ProjectCard from '../../components/ProjectCard';
 
 const SupervisorDashboard: React.FC = () => {

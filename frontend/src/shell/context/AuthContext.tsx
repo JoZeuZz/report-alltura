@@ -1,8 +1,13 @@
 import React, { createContext, useState, useContext, useEffect, ReactNode, useCallback, useMemo } from 'react';
-import * as api from '../services/apiService';
+import * as api from '@/shell/services/apiService';
 import { jwtDecode } from 'jwt-decode';
-import { User } from '../types/api';
-import { refreshAccessToken, clearStoredTokens } from '../services/authRefresh';
+import { User } from '@/types/api';
+import {
+  refreshAccessToken,
+  clearStoredTokens,
+  getStoredAccessToken,
+  storeTokens,
+} from '@/shell/services/authRefresh';
 
 interface AuthContextType {
   user: User | null;
@@ -27,7 +32,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     const initializeAuth = async () => {
       try {
-        let token = localStorage.getItem('accessToken');
+        let token = getStoredAccessToken();
         if (token && typeof token === 'string') {
           const decodedUser = jwtDecode<{ user: User; exp: number }>(token);
           const isExpired = decodedUser.exp * 1000 < Date.now();
@@ -71,9 +76,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await api.post<{ accessToken: string; refreshToken: string; user: User }>('/auth/login', { email, password });
       const { accessToken, refreshToken, user } = response;
 
-      // Guardar ambos tokens en localStorage
-      localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('refreshToken', refreshToken);
+      // Guardar tokens con contrato único de sesión
+      storeTokens(accessToken, refreshToken);
       
       // Establecer usuario desde la respuesta del backend
       setUser(user);
@@ -94,9 +98,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const refreshUserData = useCallback((newUserData: User, token?: string) => {
     try {
-      // If a new token is provided, update it in localStorage
+      // Si llega un nuevo token, actualizar storage de sesión
       if (token) {
-        localStorage.setItem('accessToken', token);
+        storeTokens(token);
       }
       // Update user state with the new data from the API response
       setUser(newUserData);

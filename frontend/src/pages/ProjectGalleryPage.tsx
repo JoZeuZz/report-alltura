@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useLoaderData, useNavigate } from 'react-router-dom';
-import Modal from '../components/Modal';
-import ImageWithFallback from '../components/ImageWithFallback';
+import Modal from '@/shell/components/Modal';
+import ImageWithFallback from '@/shell/components/ImageWithFallback';
 import { Project, Scaffold } from '../types/api';
 import { buildImageUrl } from '../utils/image';
 import { formatFixedNumber } from '../utils/format';

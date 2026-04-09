@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { post } from '../services/apiService';
+import { post } from '@/shell/services/apiService';
 import { Project, Report } from '../types/api';
 import { useGet } from '../hooks/useGet';
 import { formatDisplayName } from '../utils/name';
 import { buildImageUrl } from '../utils/image';
-import ImageWithFallback from '../components/ImageWithFallback';
+import ImageWithFallback from '@/shell/components/ImageWithFallback';
 import { formatCubicMeters } from '../utils/format';
 
 const ReportViewerPage: React.FC = () => {

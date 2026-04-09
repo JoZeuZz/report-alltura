@@ -8,4 +8,14 @@ postgres-data/
 docs/
 dist/
 legacy/
+# Credenciales GCP reales (nunca versionar)
 service-account.json
+backend/service-account.json
+backend/gcp-wif-credentials.json
+backend/*service-account*.json
+!backend/service-account.example.json
+digest.txt
+
+# Runtime logs backend (no versionar)
+backend/logs/
+backend/src/logs/

@@ -66,12 +66,14 @@ services:
       NODE_ENV: ${NODE_ENV:-production}
       PORT: ${PORT:-5000}
       CLIENT_URL: ${CLIENT_URL}
+      GOOGLE_APPLICATION_CREDENTIALS: ${GOOGLE_APPLICATION_CREDENTIALS:-/app/service-account.json}
       JWT_SECRET: ${JWT_SECRET}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
       SESSION_SECRET: ${SESSION_SECRET}
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
     volumes:
+      # Secreto externo de GCP montado en runtime (solo lectura)
       - /data/coolify/secrets/gcs/service-account.json:/app/service-account.json:ro
     expose:
       - "5000"

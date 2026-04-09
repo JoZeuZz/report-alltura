@@ -1,22 +1,22 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate, useLoaderData } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import Modal from '../../components/Modal';
+import Modal from '@/shell/components/Modal';
 import ProjectSelector from '../../components/ProjectSelector';
 import ScaffoldFilters from '../../components/ScaffoldFilters';
 import ScaffoldGrid from '../../components/ScaffoldGrid';
 import ScaffoldTableView from '../../components/ScaffoldTableView';
-import LoadingOverlay from '../../components/LoadingOverlay';
+import LoadingOverlay from '@/shell/components/LoadingOverlay';
 import ScaffoldDetailsModal from '../../components/ScaffoldDetailsModal';
 import { Project, Scaffold } from '../../types/api';
-import UploadProgress, { UploadStage } from '../../components/UploadProgress';
-import { apiService, get, patch, del, uploadWithProgress } from '../../services/apiService';
+import UploadProgress, { UploadStage } from '@/shell/components/UploadProgress';
+import { apiService, get, patch, del, uploadWithProgress } from '@/shell/services/apiService';
 import {
   processImageFile,
   formatBytes,
   ImageProcessingResult,
   ALLOWED_IMAGE_ACCEPT,
-} from '../../utils/imageProcessing';
+} from '@/shell/utils/imageProcessing';
 import { formatFixedNumber } from '../../utils/format';
 
 // Alertas inteligentes deshabilitadas temporalmente

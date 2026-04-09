@@ -3,13 +3,13 @@ import { useLoaderData, useActionData, useNavigate, useSubmit, useRevalidator } 
 import toast from 'react-hot-toast';
 import { Client, Project, User } from '../../types/api';
 import ProjectForm from '../../components/ProjectForm';
-import Modal from '../../components/Modal';
+import Modal from '@/shell/components/Modal';
 import AssignSupervisorsForm from '../../components/AssignSupervisorsForm';
-import ConfirmationModal from '../../components/ConfirmationModal';
+import ConfirmationModal from '@/shell/components/ConfirmationModal';
 import { ProjectCard } from '../../components/cards';
-import { ResponsiveGrid } from '../../components/layout';
+import { ResponsiveGrid } from '@/shell/layout';
 import { useBreakpoints } from '../../hooks';
-import { apiService } from '../../services/apiService';
+import { apiService } from '@/shell/services/apiService';
 
 const ProjectsPage: React.FC = () => {
   const { projects, clients, users } = useLoaderData() as { projects: Project[], clients: Client[], users: User[] };

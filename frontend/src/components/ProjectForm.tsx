@@ -2,7 +2,7 @@ import { Form, useNavigation, useActionData } from 'react-router-dom';
 import { useState } from 'react';
 import { Project, Client, User } from '../types/api';
 import { formatNameParts } from '../utils/name';
-import Modal from './Modal';
+import Modal from '@/shell/components/Modal';
 
 interface ProjectFormProps {
   project: Project | null;

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getCubicMetersStats } from '../services/apiService';
+import { getCubicMetersStats } from '@/shell/services/apiService';
 
 interface CubicMetersStats {
   assembled_cubic_meters: number;

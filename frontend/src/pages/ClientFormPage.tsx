@@ -8,7 +8,7 @@ import { useGet } from '../hooks/useGet';
 import { usePost, usePut } from '../hooks/useMutate';
 import { useFormErrors } from '../hooks/useFormErrors';
 import { Client } from '../types/api';
-import Spinner from '../components/Spinner';
+import Spinner from '@/shell/components/Spinner';
 
 const clientSchema = z.object({
   name: z.string().min(1, 'El nombre es requerido').max(255, 'Máximo 255 caracteres'),

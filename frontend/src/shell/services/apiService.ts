@@ -1,5 +1,9 @@
 import axios from 'axios';
-import { refreshAccessToken, clearStoredTokens } from './authRefresh';
+import {
+  refreshAccessToken,
+  clearStoredTokens,
+  getStoredAccessToken,
+} from './authRefresh';
 
 export const apiService = axios.create({
   baseURL: '/api',
@@ -7,7 +11,7 @@ export const apiService = axios.create({
 
 // Interceptor de peticiones: Agregar token de autenticación
 apiService.interceptors.request.use((config) => {
-  const token = localStorage.getItem('accessToken');
+  const token = getStoredAccessToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }

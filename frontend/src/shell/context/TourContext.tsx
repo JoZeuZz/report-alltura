@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
-import { TourRole, TourStep, onboardingStepsByRole, TOUR_VERSION } from '../utils/tourSteps';
+import { TourRole, TourStep, onboardingStepsByRole, TOUR_VERSION } from '@/shell/utils/tourSteps';
 
 type StopReason = 'completed' | 'skipped' | 'dismissed';
 type TourMode = 'onboarding' | 'contextual';

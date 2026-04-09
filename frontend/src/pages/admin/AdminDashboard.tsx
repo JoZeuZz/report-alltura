@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, useLoaderData } from 'react-router-dom';
 import { Scaffold } from '../../types/api';
 import { formatDisplayName } from '../../utils/name';
-import { ResponsiveGrid } from '../../components/layout';
+import { ResponsiveGrid } from '@/shell/layout';
 import { formatCubicMeters } from '../../utils/format';
 
 interface DashboardSummary {

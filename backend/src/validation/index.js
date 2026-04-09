@@ -6,8 +6,7 @@
  */
 
 const Joi = require('joi');
-const sharedSchemas = require('../lib/validation/sharedSchemas');
-const customValidators = require('../lib/validation/customValidators');
+const { sharedSchemas, customValidators } = require('../lib/validation');
 
 // Aliases y schemas adicionales usados por rutas actuales.
 const shortString = Joi.string()

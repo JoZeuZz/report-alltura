@@ -3,19 +3,19 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '@/shell/context/AuthContext';
 import { usePut } from '../hooks/useMutate';
 import { useFormErrors } from '../hooks/useFormErrors';
 import { User } from '../types/api';
 import UserIcon from '../components/icons/UserIcon';
-import UploadProgress, { UploadStage } from '../components/UploadProgress';
-import { uploadWithProgress } from '../services/apiService';
+import UploadProgress, { UploadStage } from '@/shell/components/UploadProgress';
+import { uploadWithProgress } from '@/shell/services/apiService';
 import {
   processImageFile,
   formatBytes,
   ImageProcessingResult,
   ALLOWED_IMAGE_ACCEPT,
-} from '../utils/imageProcessing';
+} from '@/shell/utils/imageProcessing';
 
 type UserUpdateResponse = { user: User; token: string };
 

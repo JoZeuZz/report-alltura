@@ -10,3 +10,9 @@ postgres-data
 npm-debug.log
 Dockerfile
 docker-compose.yml
+
+# Credenciales GCP reales (no deben entrar a la imagen)
+service-account.json
+gcp-wif-credentials.json
+*service-account*.json
+!service-account.example.json

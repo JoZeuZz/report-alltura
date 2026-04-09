@@ -1,10 +1,11 @@
 import { createBrowserRouter, redirect, LoaderFunctionArgs, ActionFunctionArgs } from 'react-router-dom';
 import { lazy } from 'react';
-import AppLayout from '../layouts/AppLayout';
+import AppLayout from '@/shell/layout/AppLayout';
 import LoginPage from '../pages/LoginPage';
-import ErrorPage from '../components/ErrorPage';
+import ErrorPage from '@/shell/components/ErrorPage';
 import type { User } from '../types/api';
-import { refreshAccessToken, clearStoredTokens } from '../services/authRefresh';
+import { refreshAccessToken, clearStoredTokens } from '@/shell/services/authRefresh';
+import { requestRouterApi } from './routerApi';
 
 // Admin Pages (lazy loaded)
 const AdminDashboard = lazy(() => import('../pages/admin/AdminDashboard'));
@@ -32,85 +33,8 @@ const UserFormPage = lazy(() => import('../pages/UserFormPage'));
 const NotificationsPage = lazy(() => import('../pages/NotificationsPage'));
 const NotFoundPage = lazy(() => import('../pages/NotFoundPage'));
 
-// API Base URL - usar /api directamente para que Vite proxy maneje la redirección
-const API_URL = '/api';
-
-// Helper para obtener el token de autenticación
-function getAuthToken() {
-  return localStorage.getItem('accessToken');
-}
-
-// Helper para hacer fetch autenticado
-async function fetchAPI(endpoint: string, options: RequestInit = {}, allowRetry = true) {
-  const token = getAuthToken();
-
-  const url = `${API_URL}${endpoint}`;
-
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
-
-  if (!response.ok) {
-    if (response.status === 401 && allowRetry) {
-      const newToken = await refreshAccessToken();
-      if (newToken) {
-        return fetchAPI(
-          endpoint,
-          {
-            ...options,
-            headers: {
-              ...(options.headers || {}),
-              Authorization: `Bearer ${newToken}`,
-            },
-          },
-          false
-        );
-      }
-      clearStoredTokens();
-    }
-
-    // Intentar extraer el mensaje de error del backend
-    let errorMessage = 'Error del servidor';
-    let validationErrors: Array<{ field: string; message: string }> = [];
-    
-    try {
-      const errorData = await response.json();
-      // El backend puede enviar: { error, message, errors }
-      if (errorData.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
-        validationErrors = errorData.errors;
-        errorMessage = errorData.message || 'Error de validación';
-      } else if (errorData.message) {
-        errorMessage = errorData.message;
-      }
-    } catch (e) {
-      // Si no se puede parsear la respuesta, usar mensaje genérico
-      console.error('Error parsing error response:', e);
-    }
-
-    if (response.status === 401) {
-      const error = new Error('No autorizado') as any;
-      error.validationErrors = validationErrors;
-      throw error;
-    }
-    if (response.status === 404) {
-      const error = new Error('No encontrado') as any;
-      error.validationErrors = validationErrors;
-      throw error;
-    }
-    
-    // Lanzar error con el mensaje detallado del backend y los errores de validación
-    const error = new Error(errorMessage) as any;
-    error.validationErrors = validationErrors;
-    throw error;
-  }
-
-  return response.json();
-}
+// Wrapper explícito para loaders/actions usando la capa HTTP central (apiService)
+const fetchAPI = requestRouterApi;
 
 // Helper para obtener el usuario desde el token
 async function getUserFromToken(): Promise<
@@ -752,21 +676,10 @@ async function createScaffoldPageAction({ request, params }: ActionFunctionArgs)
       };
     }
     
-    const token = getAuthToken();
-    const response = await fetch(`${API_URL}/scaffolds`, {
+    await fetchAPI('/scaffolds', {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        // No establecer Content-Type para que el navegador lo haga con boundary
-      },
-      body: formData, // Usar FormData original directamente
+      body: formData,
     });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error('Backend error:', errorData);
-      throw new Error(errorData.error || errorData.message || 'Error al crear el andamio');
-    }
     
     // Redirigir según el rol del usuario
     const userRole = user?.role;

@@ -3,10 +3,10 @@ import { useNavigate, useLoaderData, useActionData, useLocation, useSubmit } fro
 import toast from 'react-hot-toast';
 import { User } from '../../types/api';
 import UserForm from '../../components/UserForm';
-import Modal from '../../components/Modal';
-import ConfirmationModal from '../../components/ConfirmationModal';
+import Modal from '@/shell/components/Modal';
+import ConfirmationModal from '@/shell/components/ConfirmationModal';
 import { UserCard } from '../../components/cards';
-import { ResponsiveGrid } from '../../components/layout';
+import { ResponsiveGrid } from '@/shell/layout';
 import { useBreakpoints } from '../../hooks';
 import { formatNameParts } from '../../utils/name';
 

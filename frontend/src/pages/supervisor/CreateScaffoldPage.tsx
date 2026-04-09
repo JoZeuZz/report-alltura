@@ -2,14 +2,14 @@ import React, { useState, useEffect, useRef, ChangeEvent, FormEvent } from 'reac
 import { useParams, useNavigate, useLocation, useLoaderData } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { Project } from '../../types/api';
-import UploadProgress, { UploadStage } from '../../components/UploadProgress';
-import { uploadWithProgress } from '../../services/apiService';
+import UploadProgress, { UploadStage } from '@/shell/components/UploadProgress';
+import { uploadWithProgress } from '@/shell/services/apiService';
 import {
   processImageFile,
   formatBytes,
   ImageProcessingResult,
   ALLOWED_IMAGE_ACCEPT,
-} from '../../utils/imageProcessing';
+} from '@/shell/utils/imageProcessing';
 import { SCAFFOLD_FIELD_TEXTS } from '../../config/scaffoldFieldTexts';
 
 interface ScaffoldSectionForm {

@@ -1,7 +1,7 @@
 import React from 'react';
 import MetricCard from './MetricCard';
 import StatsCard from './StatsCard';
-import { CustomGrid } from '../layout';
+import { CustomGrid } from '@/shell/layout';
 
 interface ProjectDashboardSummary {
   // Metros cúbicos

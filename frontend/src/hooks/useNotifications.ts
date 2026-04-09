@@ -7,11 +7,51 @@ import {
   deleteNotification,
   deleteAllReadNotifications,
   getNotificationStats,
-} from '../services/apiService';
+} from '@/shell/services/apiService';
 import type {
   InAppNotification,
   NotificationStats,
 } from '../types/clientNotes';
+
+const DEFAULT_REFRESH_INTERVAL = 30000;
+
+type PollListener = () => void;
+
+type PollingEntry = {
+  timerId: ReturnType<typeof window.setInterval>;
+  listeners: Set<PollListener>;
+};
+
+const pollingRegistry = new Map<number, PollingEntry>();
+
+const subscribeToSharedPolling = (intervalMs: number, listener: PollListener) => {
+  const existingEntry = pollingRegistry.get(intervalMs);
+
+  if (existingEntry) {
+    existingEntry.listeners.add(listener);
+  } else {
+    const listeners = new Set<PollListener>([listener]);
+    const timerId = window.setInterval(() => {
+      listeners.forEach((callback) => callback());
+    }, intervalMs);
+
+    pollingRegistry.set(intervalMs, { timerId, listeners });
+  }
+
+  return () => {
+    const current = pollingRegistry.get(intervalMs);
+    if (!current) {
+      return;
+    }
+
+    current.listeners.delete(listener);
+
+    if (current.listeners.size === 0) {
+      window.clearInterval(current.timerId);
+      pollingRegistry.delete(intervalMs);
+    }
+  };
+};
 
 /**
  * Hook para gestionar notificaciones in-app
@@ -65,17 +105,20 @@ export const useNotifications = (params?: {
     fetchUnreadCount();
   }, [fetchNotifications, fetchUnreadCount]);
 
-  // Auto-refresh
-  useEffect(() => {
-    if (params?.autoRefresh) {
-      const interval = setInterval(() => {
-        fetchNotifications();
-        fetchUnreadCount();
-      }, params.refreshInterval || 30000); // Default: 30 segundos
+  const runRefreshCycle = useCallback(() => {
+    void fetchNotifications();
+    void fetchUnreadCount();
+  }, [fetchNotifications, fetchUnreadCount]);
 
-      return () => clearInterval(interval);
+  // Auto-refresh compartido para evitar timers duplicados por componente
+  useEffect(() => {
+    if (!params?.autoRefresh) {
+      return undefined;
     }
-  }, [params?.autoRefresh, params?.refreshInterval, fetchNotifications, fetchUnreadCount]);
+
+    const intervalMs = params.refreshInterval || DEFAULT_REFRESH_INTERVAL;
+    return subscribeToSharedPolling(intervalMs, runRefreshCycle);
+  }, [params?.autoRefresh, params?.refreshInterval, runRefreshCycle]);
 
   const markAsRead = async (notificationId: number) => {
     try {

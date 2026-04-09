@@ -3,24 +3,32 @@ type RefreshResponse = {
   refreshToken?: string;
 };
 
+export const TOKEN_STORAGE_KEYS = {
+  accessToken: 'accessToken',
+  refreshToken: 'refreshToken',
+} as const;
+
 let refreshPromise: Promise<string | null> | null = null;
 
-export const getStoredAccessToken = () => localStorage.getItem('accessToken');
+export const getStoredAccessToken = () =>
+  localStorage.getItem(TOKEN_STORAGE_KEYS.accessToken);
 
-export const getStoredRefreshToken = () => localStorage.getItem('refreshToken');
+export const getStoredRefreshToken = () =>
+  localStorage.getItem(TOKEN_STORAGE_KEYS.refreshToken);
 
 export const storeTokens = (accessToken?: string, refreshToken?: string) => {
   if (accessToken) {
-    localStorage.setItem('accessToken', accessToken);
+    localStorage.setItem(TOKEN_STORAGE_KEYS.accessToken, accessToken);
   }
+
   if (refreshToken) {
-    localStorage.setItem('refreshToken', refreshToken);
+    localStorage.setItem(TOKEN_STORAGE_KEYS.refreshToken, refreshToken);
   }
 };
 
 export const clearStoredTokens = () => {
-  localStorage.removeItem('accessToken');
-  localStorage.removeItem('refreshToken');
+  localStorage.removeItem(TOKEN_STORAGE_KEYS.accessToken);
+  localStorage.removeItem(TOKEN_STORAGE_KEYS.refreshToken);
 };
 
 const runRefresh = async (): Promise<string | null> => {

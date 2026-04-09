@@ -1,5 +1,5 @@
 import imageCompression from 'browser-image-compression';
-import { IMAGE_MAX_BYTES, IMAGE_MAX_MB } from '../config/imageLimits';
+import { IMAGE_MAX_BYTES, IMAGE_MAX_MB } from '@/config/imageLimits';
 
 export const ALLOWED_IMAGE_TYPES = [
   'image/jpeg',

@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Scaffold } from '../types/api';
-import UploadProgress, { UploadStage } from './UploadProgress';
+import UploadProgress, { UploadStage } from '@/shell/components/UploadProgress';
 import {
   processImageFile,
   formatBytes,
   ImageProcessingResult,
   ALLOWED_IMAGE_ACCEPT,
-} from '../utils/imageProcessing';
+} from '@/shell/utils/imageProcessing';
 import { SCAFFOLD_FIELD_TEXTS } from '../config/scaffoldFieldTexts';
 
 interface ScaffoldFormModalProps {

@@ -5,15 +5,15 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
 import ImageUploadIcon from '../../components/icons/ImageUploadIcon';
-import LoadingOverlay from '../../components/LoadingOverlay';
-import UploadProgress, { UploadStage } from '../../components/UploadProgress';
-import { uploadWithProgress } from '../../services/apiService';
+import LoadingOverlay from '@/shell/components/LoadingOverlay';
+import UploadProgress, { UploadStage } from '@/shell/components/UploadProgress';
+import { uploadWithProgress } from '@/shell/services/apiService';
 import {
   processImageFile,
   formatBytes,
   ImageProcessingResult,
   ALLOWED_IMAGE_ACCEPT,
-} from '../../utils/imageProcessing';
+} from '@/shell/utils/imageProcessing';
 
 const disassembleSchema = z.object({
   disassembly_notes: z.string().max(1000, 'Máximo 1000 caracteres').optional(),

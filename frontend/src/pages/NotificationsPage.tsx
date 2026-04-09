@@ -1,5 +1,5 @@
 import { useNotifications } from '../hooks/useNotifications';
-import NotificationItem from '../components/NotificationItem';
+import NotificationItem from '@/shell/components/NotificationItem';
 import { useState } from 'react';
 
 const ITEMS_PER_PAGE = 10;

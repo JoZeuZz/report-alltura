@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { appendQueryParam, DEFAULT_IMAGE_PLACEHOLDER } from '../utils/image';
+import { appendQueryParam, DEFAULT_IMAGE_PLACEHOLDER } from '@/utils/image';
 
 interface ImageWithFallbackProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   retryCount?: number;

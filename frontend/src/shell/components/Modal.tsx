@@ -7,9 +7,21 @@ interface ModalProps {
   children: ReactNode;
   title?: string;
   description?: string;
+  overlayClassName?: string;
+  panelClassName?: string;
+  showCloseButton?: boolean;
 }
 
-export default function Modal({ isOpen, onClose, children, title, description }: ModalProps) {
+export default function Modal({
+  isOpen,
+  onClose,
+  children,
+  title,
+  description,
+  overlayClassName,
+  panelClassName,
+  showCloseButton = true,
+}: ModalProps) {
   const previousActiveElement = useRef<HTMLElement | null>(null);
   const titleId = useRef(`modal-title-${Math.random().toString(36).substr(2, 9)}`);
   const descId = useRef(`modal-desc-${Math.random().toString(36).substr(2, 9)}`);
@@ -50,7 +62,7 @@ export default function Modal({ isOpen, onClose, children, title, description }:
   return (
     <FocusTrap>
       <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex justify-center items-center p-4"
+        className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex justify-center items-center p-4 ${overlayClassName || ''}`}
         onClick={onClose}
         role="dialog"
         aria-modal="true"
@@ -91,21 +103,23 @@ export default function Modal({ isOpen, onClose, children, title, description }:
         `}</style>
         
         <div
-          className="bg-white p-4 sm:p-6 md:p-8 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] sm:max-h-[85vh] overflow-y-auto"
+          className={`bg-white p-4 sm:p-6 md:p-8 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] sm:max-h-[85vh] overflow-y-auto ${panelClassName || ''}`}
           onClick={(e) => e.stopPropagation()}
           style={{
             animation: 'modalSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
           }}
         >
-          <div className="flex justify-end mb-2">
-            <button 
-              onClick={onClose} 
-              className="text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg p-1.5 text-2xl leading-none transition-all duration-200 active:scale-95"
-              aria-label="Cerrar modal"
-            >
-              <span aria-hidden="true">&times;</span>
-            </button>
-          </div>
+          {showCloseButton && (
+            <div className="flex justify-end mb-2">
+              <button 
+                onClick={onClose} 
+                className="text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg p-1.5 text-2xl leading-none transition-all duration-200 active:scale-95"
+                aria-label="Cerrar modal"
+              >
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+          )}
           <div>
             {title && <h2 id={titleId.current} className="sr-only">{title}</h2>}
             {description && <p id={descId.current} className="sr-only">{description}</p>}

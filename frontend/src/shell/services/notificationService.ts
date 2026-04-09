@@ -1,3 +1,5 @@
+import { post } from './apiService';
+
 class NotificationService {
   private swRegistration: ServiceWorkerRegistration | null = null;
   
@@ -47,15 +49,8 @@ class NotificationService {
         applicationServerKey: applicationServerKey as BufferSource
       });
 
-      // Enviar suscripción al backend
-      await fetch('/api/notifications/subscribe', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-        },
-        body: JSON.stringify({ subscription })
-      });
+      // Enviar suscripción vía capa HTTP central para compartir auth/errores
+      await post('/notifications/subscribe', { subscription });
 
       return true;
     } catch (error) {
@@ -71,7 +66,7 @@ class NotificationService {
       
       const subscription = await this.swRegistration.pushManager.getSubscription();
       return !!subscription;
-    } catch (error) {
+    } catch (_error) {
       return false;
     }
   }

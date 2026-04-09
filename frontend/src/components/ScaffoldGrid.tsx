@@ -1,7 +1,7 @@
 import { Scaffold } from '../types/api';
-import { ResponsiveGrid } from './layout';
+import { ResponsiveGrid } from '@/shell/layout';
 import { useScaffoldPermissions } from '../hooks';
-import ImageWithFallback from './ImageWithFallback';
+import ImageWithFallback from '@/shell/components/ImageWithFallback';
 import { buildImageUrl } from '../utils/image';
 import { formatCubicMeters } from '../utils/format';
 

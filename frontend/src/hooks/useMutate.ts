@@ -1,6 +1,6 @@
 // filepath: src/hooks/usePost.ts
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import * as api from '../services/apiService';
+import * as api from '@/shell/services/apiService';
 
 export const usePost = <T, U>(key: string, url: string) => {
   const queryClient = useQueryClient();

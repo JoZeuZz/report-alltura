@@ -5,7 +5,7 @@ import {
   approveModification,
   rejectModification,
   deleteModification,
-} from '../services/apiService';
+} from '@/shell/services/apiService';
 import type {
   ScaffoldModification,
   CreateScaffoldModificationDTO,

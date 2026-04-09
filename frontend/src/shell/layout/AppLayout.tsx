@@ -1,16 +1,16 @@
 import { useState, Fragment, useRef, useEffect, Suspense } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { useAuth } from '../context/AuthContext';
-import { useTour } from '../context/TourContext';
-import TourOverlay from '../components/TourOverlay';
-import type { TourRole } from '../utils/tourSteps';
-import { getContextualStepsForRoute } from '../utils/tourSteps';
-import { useBreakpoints } from '../hooks';
-import logoWhite from '../assets/logo-alltura-white.png';
-import UserIcon from '../components/icons/UserIcon';
-import NotificationBell from '../components/NotificationBell';
-import { formatNameParts } from '../utils/name';
+import { useAuth } from '@/shell/context/AuthContext';
+import { useTour } from '@/shell/context/TourContext';
+import TourOverlay from '@/shell/components/TourOverlay';
+import type { TourRole } from '@/shell/utils/tourSteps';
+import { getContextualStepsForRoute } from '@/shell/utils/tourSteps';
+import { useBreakpoints } from '@/hooks';
+import logoWhite from '@/assets/logo-alltura-white.png';
+import UserIcon from '@/components/icons/UserIcon';
+import NotificationBell from '@/shell/components/NotificationBell';
+import { formatNameParts } from '@/utils/name';
 
 // --- Iconos SVG ---
 const MenuIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -37,6 +37,8 @@ const ChevronRightIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
+const SIDEBAR_STORAGE_KEY = 'sidebarCollapsed';
+
 const AppLayout = () => {
   const { user, logout } = useAuth();
   const { startOnboarding, startContextual, isActive, steps, stepIndex } = useTour();
@@ -44,11 +46,12 @@ const AppLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   
-  // Estado inicial: expandida en desktop, colapsada en móvil
+  // Estado inicial: expandida en desktop, cerrada en móvil.
+  // En desktop se restaura desde localStorage para mantener preferencia.
   const [isSidebarOpen, setSidebarOpen] = useState(() => {
     if (typeof window === 'undefined') return false;
-    const isDesktop = window.innerWidth >= 1024;
-    const saved = localStorage.getItem('sidebarCollapsed');
+    const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
+    const saved = localStorage.getItem(SIDEBAR_STORAGE_KEY);
     if (saved !== null && isDesktop) {
       return !JSON.parse(saved); // invertir porque guardamos "collapsed"
     }
@@ -112,12 +115,44 @@ const AppLayout = () => {
     }
   }, [isProfileMenuOpen]);
 
+  // Cerrar menú de perfil al cambiar de ruta para evitar overlays colgados.
+  useEffect(() => {
+    setProfileMenuOpen(false);
+  }, [location.pathname]);
+
+  // Sincronizar comportamiento desktop/mobile al cambiar breakpoint.
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(min-width: 1024px)');
+
+    const applyLayoutState = (isDesktop: boolean) => {
+      if (isDesktop) {
+        const saved = localStorage.getItem(SIDEBAR_STORAGE_KEY);
+        if (saved !== null) {
+          setSidebarOpen(!JSON.parse(saved));
+          return;
+        }
+        setSidebarOpen(true);
+        return;
+      }
+
+      setSidebarOpen(false);
+      setProfileMenuOpen(false);
+    };
+
+    const handleChange = (event: MediaQueryListEvent) => {
+      applyLayoutState(event.matches);
+    };
+
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
+
   // Guardar estado de sidebar en localStorage (solo desktop)
   useEffect(() => {
-    if (window.innerWidth >= 1024) {
-      localStorage.setItem('sidebarCollapsed', JSON.stringify(!isSidebarOpen));
+    if (!isMobile) {
+      localStorage.setItem(SIDEBAR_STORAGE_KEY, JSON.stringify(!isSidebarOpen));
     }
-  }, [isSidebarOpen]);
+  }, [isSidebarOpen, isMobile]);
 
   if (!user) {
     // O un spinner/loading component
@@ -127,10 +162,17 @@ const AppLayout = () => {
   // Cierra la sidebar después de hacer clic en un enlace (móvil y escritorio).
   const handleLinkClick = () => {
     // Solo cerrar en móvil
-    if (window.innerWidth < 1024) {
+    if (isMobile) {
       setSidebarOpen(false);
     }
   };
+
+  const roleLabel =
+    user?.role === 'admin'
+      ? 'Administrador'
+      : user?.role === 'supervisor'
+        ? 'Supervisor'
+        : 'Cliente';
 
   const linkClass = `flex items-center px-3 py-2 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors ${
     !isSidebarOpen ? 'lg:justify-center lg:px-2' : ''
@@ -269,6 +311,7 @@ const AppLayout = () => {
       {/* --- Sidebar Responsive --- */}
       <nav
         aria-label="Navegación principal"
+        data-tour="shell-sidebar"
         className={`fixed lg:static inset-y-0 left-0 z-40 bg-dark-blue text-white flex flex-col 
           transform lg:transform-none transition-all duration-300 ease-in-out
           ${isSidebarOpen ? 'w-64 translate-x-0' : 'w-64 -translate-x-full lg:translate-x-0 lg:w-16'}`}
@@ -294,7 +337,7 @@ const AppLayout = () => {
               {isSidebarOpen ? <ChevronLeftIcon aria-hidden="true" /> : <ChevronRightIcon aria-hidden="true" />}
             </button>
           </div>
-          <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto overflow-x-hidden">
+          <nav data-tour="shell-navigation" className="flex-1 px-2 py-4 space-y-1 overflow-y-auto overflow-x-hidden">
             <div className={!isSidebarOpen ? 'lg:space-y-2' : ''}>
               {user?.role === 'admin' ? adminLinks : user?.role === 'supervisor' ? supervisorLinks : clientLinks}
             </div>
@@ -342,96 +385,94 @@ const AppLayout = () => {
               <span className={!isSidebarOpen ? 'lg:hidden' : ''}>Guía</span>
             </button>
           </div>
-
-          {/* Sección de usuario con menú desplegable */}
-          <div className="px-2 py-4 flex-shrink-0 relative" ref={profileMenuRef}>
-            <button
-              onClick={() => setProfileMenuOpen(!isProfileMenuOpen)}
-              className={`w-full flex items-center p-2 rounded-lg hover:bg-gray-700 transition-colors ${
-                !isSidebarOpen ? 'lg:justify-center' : ''
-              }`}
-            >
-              <div className="w-10 h-10 rounded-full bg-gray-500 flex-shrink-0 overflow-hidden flex items-center justify-center">
-                {user.profile_picture_url ? (
-                  <img src={user.profile_picture_url} alt="Perfil" className="w-full h-full object-cover" />
-                ) : (
-                  <UserIcon className="w-6 h-6 text-gray-300" />
-                )}
-              </div>
-              <div className={`ml-3 text-left flex-1 ${!isSidebarOpen ? 'lg:hidden' : ''}`}>
-                <p className="text-sm font-medium text-white truncate">
-                  {formatNameParts(user?.first_name, user?.last_name)}
-                </p>
-                <p className="text-xs text-gray-400">
-                  {user?.role === 'admin' ? 'Administrador' : user?.role === 'supervisor' ? 'Supervisor' : 'Cliente'}
-                </p>
-              </div>
-              <ChevronDownIcon className={`text-gray-400 transition-transform ${isProfileMenuOpen ? 'rotate-180' : ''} ${
-                !isSidebarOpen ? 'lg:hidden' : ''
-              }`} />
-            </button>
-
-            {/* Menú desplegable del perfil */}
-            {isProfileMenuOpen && (
-              <div className={`fixed bg-gray-800 rounded-lg shadow-xl border border-gray-700 py-2 z-[100] ${
-                isSidebarOpen 
-                  ? 'bottom-20 left-2 w-60' 
-                  : 'bottom-20 left-2 w-60 lg:left-20 lg:w-48'
-              }`}>
-                <button
-                  onClick={() => {
-                    navigate(`/${user.role}/profile`);
-                    setProfileMenuOpen(false);
-                    handleLinkClick();
-                  }}
-                  className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 flex items-center whitespace-nowrap"
-                >
-                  <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                  Mi Perfil
-                </button>
-                <hr className="my-1 border-gray-700" />
-                <button
-                  onClick={() => {
-                    logout();
-                    setProfileMenuOpen(false);
-                  }}
-                  className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-gray-700 flex items-center whitespace-nowrap"
-                >
-                  <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                  </svg>
-                  Cerrar Sesión
-                </button>
-              </div>
-            )}
-          </div>
         </div>
       </nav>
 
       {/* Contenedor para Header y Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         {/* Header Unificado */}
-        <header className="bg-dark-blue text-white flex items-center justify-between p-4 z-30 shadow-lg flex-shrink-0">
-          {/* Botón de menú: solo visible en móvil/tablet */}
-          <button 
-            onClick={() => setSidebarOpen(!isSidebarOpen)} 
-            className="text-white lg:hidden p-2 -ml-2"
-            aria-label={isSidebarOpen ? "Cerrar menú de navegación" : "Abrir menú de navegación"}
-            aria-expanded={isSidebarOpen}
-          >
-            <MenuIcon aria-hidden="true" />
-          </button>
-          {/* Logo centrado en móvil, a la izquierda en desktop */}
-          <img src={logoWhite} alt="Alltura Logo" className="h-8 w-auto lg:ml-0" />
-          
-          {/* Notification Bell - visible para todos los usuarios autenticados */}
-          <div className="lg:hidden p-2 -mr-2">
-            <NotificationBell variant="dark" />
+        <header data-tour="shell-header" className="bg-dark-blue text-white flex items-center justify-between p-4 z-30 shadow-lg flex-shrink-0 relative">
+          <div className="flex items-center gap-2">
+            {/* Botón de menú: solo visible en móvil/tablet */}
+            <button
+              type="button"
+              data-tour="shell-mobile-menu-toggle"
+              onClick={() => setSidebarOpen(!isSidebarOpen)}
+              className="text-white lg:hidden p-2 -ml-2"
+              aria-label={isSidebarOpen ? "Cerrar menú de navegación" : "Abrir menú de navegación"}
+              aria-expanded={isSidebarOpen}
+            >
+              <MenuIcon aria-hidden="true" />
+            </button>
+
+            <img data-tour="shell-logo" src={logoWhite} alt="Alltura Logo" className="h-8 w-auto" />
           </div>
-          <div className="hidden lg:block">
-            <NotificationBell variant="dark" />
+
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div data-tour="shell-notifications" className="p-1">
+              <NotificationBell variant="dark" />
+            </div>
+
+            <div data-tour="shell-profile-menu" className="relative" ref={profileMenuRef}>
+              <button
+                type="button"
+                onClick={() => setProfileMenuOpen(!isProfileMenuOpen)}
+                className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-gray-700 transition-colors"
+                aria-expanded={isProfileMenuOpen}
+                aria-label="Abrir menú de perfil"
+              >
+                <div className="w-9 h-9 rounded-full bg-gray-500 flex-shrink-0 overflow-hidden flex items-center justify-center">
+                  {user.profile_picture_url ? (
+                    <img src={user.profile_picture_url} alt="Perfil" className="w-full h-full object-cover" />
+                  ) : (
+                    <UserIcon className="w-5 h-5 text-gray-300" />
+                  )}
+                </div>
+
+                <div className="hidden md:block text-left max-w-[180px]">
+                  <p className="text-sm font-medium text-white truncate">
+                    {formatNameParts(user?.first_name, user?.last_name)}
+                  </p>
+                  <p className="text-xs text-gray-300 truncate">{roleLabel}</p>
+                </div>
+
+                <ChevronDownIcon
+                  className={`text-gray-300 transition-transform ${isProfileMenuOpen ? 'rotate-180' : ''}`}
+                />
+              </button>
+
+              {isProfileMenuOpen && (
+                <div className="absolute right-0 top-full mt-2 w-60 bg-gray-800 rounded-lg shadow-xl border border-gray-700 py-2 z-[100]">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigate(`/${user.role}/profile`);
+                      setProfileMenuOpen(false);
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 flex items-center whitespace-nowrap"
+                  >
+                    <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    Mi Perfil
+                  </button>
+                  <hr className="my-1 border-gray-700" />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      logout();
+                      setProfileMenuOpen(false);
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-gray-700 flex items-center whitespace-nowrap"
+                  >
+                    <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    Cerrar Sesión
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 

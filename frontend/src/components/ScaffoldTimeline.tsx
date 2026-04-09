@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { get } from '../services/apiService';
+import { get } from '@/shell/services/apiService';
 
 interface TimelineEvent {
   id: number;

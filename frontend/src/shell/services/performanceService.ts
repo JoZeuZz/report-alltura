@@ -122,16 +122,24 @@ class PerformanceService {
     try {
       const metricsToSend = [...this.metrics];
       this.metrics = [];
+
+      // Excepción técnica: envío best-effort de telemetría fuera de apiService
+      // para evitar side effects de auth/redirect en métricas no críticas.
+      const accessToken = localStorage.getItem('accessToken');
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      if (accessToken) {
+        headers.Authorization = `Bearer ${accessToken}`;
+      }
       
       await fetch('/api/metrics', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-        },
+        headers,
         body: JSON.stringify({ metrics: metricsToSend })
       });
-    } catch (error) {
+    } catch (_error) {
       // Silently fail - don't spam console when metrics endpoint is not available
     }
   }

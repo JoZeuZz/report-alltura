@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '@/shell/context/AuthContext';
 import logoWhite from '../assets/logo-alltura-white.png';
 
 const loginSchema = z.object({

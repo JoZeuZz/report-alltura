@@ -1,12 +1,12 @@
 import React, { useState, useRef } from 'react';
 import { Scaffold } from '../types/api';
-import UploadProgress, { UploadStage } from './UploadProgress';
+import UploadProgress, { UploadStage } from '@/shell/components/UploadProgress';
 import {
   processImageFile,
   formatBytes,
   ImageProcessingResult,
   ALLOWED_IMAGE_ACCEPT,
-} from '../utils/imageProcessing';
+} from '@/shell/utils/imageProcessing';
 
 interface ScaffoldStatusToggleProps {
   scaffold: Scaffold;

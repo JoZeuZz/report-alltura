@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ScaffoldHistory } from '../types/api';
-import { getScaffoldHistory } from '../services/apiService';
+import { getScaffoldHistory } from '@/shell/services/apiService';
 
 interface ScaffoldHistoryViewProps {
   scaffoldId: number;

@@ -3,7 +3,7 @@ import {
   assignClientToProject,
   assignSupervisorToProject,
   getUsersByRole,
-} from '../services/apiService';
+} from '@/shell/services/apiService';
 
 interface User {
   id: number;

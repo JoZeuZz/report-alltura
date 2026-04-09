@@ -58,7 +58,18 @@ Ejecuta Jest para correr las pruebas unitarias.
 Si usas Docker para el entorno local, asegúrate de levantar la base de datos antes de iniciar el backend:
 
 ```bash
-docker-compose up -d
+npm run db:up
 ```
 
-Esto levantará un contenedor PostgreSQL y mapeará el puerto `5432` del contenedor al `localhost` del host, por lo que la configuración por defecto (`DB_HOST=localhost`) funcionará. Si prefieres usar una instancia local de PostgreSQL, edita `backend/.env` con tus credenciales y crea la base de datos antes de iniciar el backend.
+Esto levantará PostgreSQL y Redis para desarrollo local usando `docker-compose.dev.yml`. PostgreSQL quedará disponible en `localhost:5432`, por lo que la configuración por defecto (`DB_HOST=localhost`) funcionará cuando el backend se ejecute fuera de contenedor. Si prefieres usar una instancia local de PostgreSQL, edita `backend/.env` con tus credenciales y crea la base de datos antes de iniciar el backend.
+
+Fuente canónica de inicialización SQL para Docker local y deploy: `db/init/001-init.sql`.
+El archivo `init.sql` en la raíz del repo se mantiene solo como wrapper de compatibilidad y no debe contener DDL propio.
+
+---
+
+**Política de credenciales GCP (Alltura):**
+- Se versiona solo `backend/service-account.example.json` como plantilla.
+- El archivo real de credenciales no se versiona y debe mantenerse fuera del árbol del repo.
+- En local, `GOOGLE_APPLICATION_CREDENTIALS` debe apuntar a una ruta externa configurable libre.
+- En deploy Docker/Coolify, la ruta canónica es `/app/service-account.json` con montaje externo read-only (por ejemplo: `/data/coolify/secrets/gcs/service-account.json:/app/service-account.json:ro`).
