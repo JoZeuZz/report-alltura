@@ -69,7 +69,11 @@ const authMiddleware = async (req, res, next) => {
         path: req.originalUrl,
         method: req.method,
       });
-      return res.status(401).json({ message: 'No token, authorization denied' });
+      return res.status(401).json({
+        message: 'No token, authorization denied',
+        code: 'TOKEN_MISSING',
+        requestId,
+      });
     }
 
     const tokenParts = authHeader.split(' ');
@@ -79,7 +83,11 @@ const authMiddleware = async (req, res, next) => {
         path: req.originalUrl,
         method: req.method,
       });
-      return res.status(401).json({ message: 'Token format is "Bearer <token>"' });
+      return res.status(401).json({
+        message: 'Token format is "Bearer <token>"',
+        code: 'TOKEN_FORMAT_INVALID',
+        requestId,
+      });
     }
 
     const token = tokenParts[1];
@@ -95,6 +103,7 @@ const authMiddleware = async (req, res, next) => {
       return res.status(401).json({
         message: 'Token inválido',
         code: 'TOKEN_INVALID',
+        requestId,
       });
     }
 
@@ -109,7 +118,11 @@ const authMiddleware = async (req, res, next) => {
           requestId,
           userId: req.user.id,
         });
-        return res.status(401).json({ error: 'Token revocado' });
+        return res.status(401).json({
+          message: 'Token revocado',
+          code: 'TOKEN_REVOKED',
+          requestId,
+        });
       }
     } catch (redisError) {
       logger.error('No se pudo validar blacklist en Redis', {
@@ -167,6 +180,7 @@ const authMiddleware = async (req, res, next) => {
       return res.status(401).json({
         message: 'Token expirado',
         code: 'TOKEN_EXPIRED',
+        requestId,
       });
     }
 
@@ -179,6 +193,7 @@ const authMiddleware = async (req, res, next) => {
       return res.status(401).json({
         message: 'Token inválido',
         code: 'TOKEN_INVALID',
+        requestId,
       });
     }
 
@@ -189,7 +204,11 @@ const authMiddleware = async (req, res, next) => {
       error: err.message,
       stack: err.stack,
     });
-    res.status(401).json({ message: 'Token is not valid' });
+    res.status(401).json({
+      message: 'Token is not valid',
+      code: 'TOKEN_UNKNOWN_ERROR',
+      requestId,
+    });
   }
 };
 
