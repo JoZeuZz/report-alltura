@@ -76,8 +76,28 @@ class AuthService {
    * @returns {Promise<object>} Tokens y datos del usuario
    */
   static async loginUser(email, password, ip, userAgent) {
+    const incrementFailedAttemptSafe = async (identifier) => {
+      try {
+        await redisClient.incrementFailedLogin(identifier);
+      } catch (redisError) {
+        logger.warn('No se pudo incrementar contador de intentos fallidos en Redis', {
+          identifier,
+          error: redisError.message,
+        });
+      }
+    };
+
     // Verificar rate limiting por email (protección contra brute force)
-    const failedAttempts = await redisClient.getFailedLoginCount(email);
+    let failedAttempts = 0;
+    try {
+      failedAttempts = await redisClient.getFailedLoginCount(email);
+    } catch (redisError) {
+      logger.warn('No se pudo consultar intentos fallidos en Redis, se continúa con login', {
+        email,
+        error: redisError.message,
+      });
+    }
+
     if (failedAttempts >= 5) {
       logger.warn(`⚠️  Cuenta bloqueada temporalmente por múltiples intentos fallidos: ${email}`);
       const error = new Error(
@@ -92,8 +112,8 @@ class AuthService {
     const user = await User.findByEmail(email);
     if (!user) {
       // Incrementar contador de intentos fallidos
-      await redisClient.incrementFailedLogin(email);
-      await redisClient.incrementFailedLogin(ip);
+      await incrementFailedAttemptSafe(email);
+      await incrementFailedAttemptSafe(ip);
 
       logger.warn(`Intento de login fallido para email no existente: ${email}`);
       const error = new Error('Invalid credentials.');
@@ -105,8 +125,8 @@ class AuthService {
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       // Incrementar contador de intentos fallidos
-      await redisClient.incrementFailedLogin(email);
-      await redisClient.incrementFailedLogin(ip);
+      await incrementFailedAttemptSafe(email);
+      await incrementFailedAttemptSafe(ip);
 
       logger.warn(`Intento de login fallido para usuario: ${email} desde IP: ${ip}`);
       const error = new Error('Invalid credentials.');
@@ -115,8 +135,16 @@ class AuthService {
     }
 
     // Login exitoso - resetear contador de intentos fallidos
-    await redisClient.resetFailedLogin(email);
-    await redisClient.resetFailedLogin(ip);
+    try {
+      await redisClient.resetFailedLogin(email);
+      await redisClient.resetFailedLogin(ip);
+    } catch (redisError) {
+      logger.warn('No se pudo resetear contador de intentos fallidos en Redis', {
+        email,
+        ip,
+        error: redisError.message,
+      });
+    }
 
     // Generar par de tokens
     const { accessToken, refreshToken } = await generateTokenPair(user);

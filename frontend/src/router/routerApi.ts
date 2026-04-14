@@ -40,6 +40,17 @@ const parseBody = (body: BodyInit | null | undefined) => {
   }
 };
 
+const normalizeEndpoint = (endpoint: string): string => {
+  if (!endpoint || endpoint === '/') {
+    return '/';
+  }
+
+  const [path, query] = endpoint.split('?');
+  const normalizedPath = path.length > 1 ? path.replace(/\/+$/, '') : path;
+
+  return query ? `${normalizedPath}?${query}` : normalizedPath;
+};
+
 const sanitizeValidationErrors = (errors: unknown): ValidationErrorItem[] => {
   if (!Array.isArray(errors)) {
     return [];
@@ -109,6 +120,7 @@ export const requestRouterApi = async <T = unknown>(
   options: RequestInit = {}
 ): Promise<T> => {
   const method = (options.method || 'GET').toUpperCase() as RouterMethod;
+  const normalizedEndpoint = normalizeEndpoint(endpoint);
 
   try {
     if (options.body instanceof FormData) {
@@ -116,22 +128,22 @@ export const requestRouterApi = async <T = unknown>(
         throw new Error(`Método ${method} no soportado para FormData`);
       }
 
-      return await uploadWithProgress<T>(toUploadMethod(method), endpoint, options.body);
+      return await uploadWithProgress<T>(toUploadMethod(method), normalizedEndpoint, options.body);
     }
 
     const payload = parseBody(options.body);
 
     switch (method) {
       case 'GET':
-        return await get<T>(endpoint);
+        return await get<T>(normalizedEndpoint);
       case 'POST':
-        return await post<T>(endpoint, payload);
+        return await post<T>(normalizedEndpoint, payload);
       case 'PUT':
-        return await put<T>(endpoint, payload);
+        return await put<T>(normalizedEndpoint, payload);
       case 'PATCH':
-        return await patch<T>(endpoint, payload);
+        return await patch<T>(normalizedEndpoint, payload);
       case 'DELETE':
-        return await del<T>(endpoint);
+        return await del<T>(normalizedEndpoint);
       default:
         throw new Error(`Método no soportado: ${method}`);
     }

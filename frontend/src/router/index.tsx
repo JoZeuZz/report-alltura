@@ -631,7 +631,7 @@ async function supervisorDashboardLoader() {
   }
 
   try {
-    const projects = await fetchAPI('/projects/');
+    const projects = await fetchAPI('/projects');
     return { user, projects };
   } catch (error) {
     console.error('Error loading supervisor dashboard:', error);
@@ -744,7 +744,7 @@ async function clientDashboardLoader() {
   }
 
   try {
-    const projects = await fetchAPI('/projects/');
+    const projects = await fetchAPI('/projects');
     return { user, projects };
   } catch (error) {
     console.error('Error loading client dashboard:', error);

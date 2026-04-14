@@ -34,6 +34,9 @@ const logger = winston.createLogger({
     service: 'alltura-backend',
     version: config.VERSION
   },
+  // Console transport en todos los entornos para visibilidad operativa en contenedores.
+  // En producción se mantiene formato JSON estructurado.
+  // En desarrollo se conserva salida colorizada legible.
   transports: [
     // Archivo para todos los logs
     new winston.transports.File({ 
@@ -49,16 +52,15 @@ const logger = winston.createLogger({
       maxsize: 5242880,
       maxFiles: 5,
     }),
-    
-    // Console en desarrollo
-    ...(config.IS_DEVELOPMENT ? [
-      new winston.transports.Console({
-        format: winston.format.combine(
-          winston.format.colorize(),
-          winston.format.simple()
-        )
-      })
-    ] : [])
+
+    new winston.transports.Console({
+      format: config.IS_DEVELOPMENT
+        ? winston.format.combine(
+            winston.format.colorize(),
+            winston.format.simple()
+          )
+        : logFormat,
+    }),
   ],
 });
 
