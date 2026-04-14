@@ -58,46 +58,100 @@ async function revokeToken(token) {
  * - Registra información de sesión
  */
 const authMiddleware = async (req, res, next) => {
+  const requestId = req.requestId;
+
   try {
     // 1. Extraer token del header Authorization
     const authHeader = req.header('Authorization');
     if (!authHeader) {
+      logger.warn('Auth rechazada: Authorization header ausente', {
+        requestId,
+        path: req.originalUrl,
+        method: req.method,
+      });
       return res.status(401).json({ message: 'No token, authorization denied' });
     }
 
     const tokenParts = authHeader.split(' ');
     if (tokenParts.length !== 2 || tokenParts[0] !== 'Bearer') {
+      logger.warn('Auth rechazada: formato de Authorization inválido', {
+        requestId,
+        path: req.originalUrl,
+        method: req.method,
+      });
       return res.status(401).json({ message: 'Token format is "Bearer <token>"' });
     }
 
     const token = tokenParts[1];
 
-    // 2. Verificar si el token está en la blacklist (Redis)
-    const isBlacklisted = await redisClient.isTokenBlacklisted(token);
-    if (isBlacklisted) {
-      logger.warn('Intento de uso de token revocado');
-      return res.status(401).json({ error: 'Token revocado' });
+    // 2. Verificar firma JWT
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (!decoded?.user?.id) {
+      logger.warn('Auth rechazada: payload JWT sin user.id', {
+        requestId,
+        path: req.originalUrl,
+        method: req.method,
+      });
+      return res.status(401).json({
+        message: 'Token inválido',
+        code: 'TOKEN_INVALID',
+      });
     }
 
-    // 3. Verificar firma JWT
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded.user;
+
+    // 3. Verificar si el token está en la blacklist (Redis)
+    // Si Redis está temporalmente inestable, continuamos con JWT válido para evitar 401 falsos.
+    try {
+      const isBlacklisted = await redisClient.isTokenBlacklisted(token);
+      if (isBlacklisted) {
+        logger.warn('Intento de uso de token revocado', {
+          requestId,
+          userId: req.user.id,
+        });
+        return res.status(401).json({ error: 'Token revocado' });
+      }
+    } catch (redisError) {
+      logger.error('No se pudo validar blacklist en Redis', {
+        requestId,
+        userId: req.user.id,
+        error: redisError.message,
+      });
+    }
 
     // 4. Extraer información de la petición
     const ip = req.ip || req.connection.remoteAddress;
     const userAgent = req.get('user-agent') || 'unknown';
 
     // 5. Detectar anomalías de acceso
-    const anomaly = await redisClient.detectAnomaly(req.user.id, ip, userAgent);
-    if (anomaly.anomalous) {
-      logger.warn(`⚠️  Acceso anómalo detectado para usuario ${req.user.id}: ${anomaly.reason}`);
-      // Podrías enviar alerta por email/Slack aquí
-      // Por ahora solo logueamos, pero permitimos el acceso
-      // En producción, podrías bloquear o requerir 2FA
+    try {
+      const anomaly = await redisClient.detectAnomaly(req.user.id, ip, userAgent);
+      if (anomaly.anomalous) {
+        logger.warn(`⚠️  Acceso anómalo detectado para usuario ${req.user.id}: ${anomaly.reason}`, {
+          requestId,
+        });
+        // Podrías enviar alerta por email/Slack aquí
+        // Por ahora solo logueamos, pero permitimos el acceso
+        // En producción, podrías bloquear o requerir 2FA
+      }
+    } catch (redisError) {
+      logger.warn('No se pudo ejecutar detección de anomalías en Redis', {
+        requestId,
+        userId: req.user.id,
+        error: redisError.message,
+      });
     }
 
     // 6. Registrar sesión para análisis futuro
-    await redisClient.recordSession(req.user.id, ip, userAgent);
+    try {
+      await redisClient.recordSession(req.user.id, ip, userAgent);
+    } catch (redisError) {
+      logger.warn('No se pudo registrar sesión en Redis', {
+        requestId,
+        userId: req.user.id,
+        error: redisError.message,
+      });
+    }
 
     // 7. Agregar información adicional al request
     req.sessionInfo = { ip, userAgent };
@@ -105,6 +159,11 @@ const authMiddleware = async (req, res, next) => {
     next();
   } catch (err) {
     if (err.name === 'TokenExpiredError') {
+      logger.warn('Auth rechazada: token expirado', {
+        requestId,
+        path: req.originalUrl,
+        method: req.method,
+      });
       return res.status(401).json({
         message: 'Token expirado',
         code: 'TOKEN_EXPIRED',
@@ -112,13 +171,24 @@ const authMiddleware = async (req, res, next) => {
     }
 
     if (err.name === 'JsonWebTokenError') {
+      logger.warn('Auth rechazada: token inválido', {
+        requestId,
+        path: req.originalUrl,
+        method: req.method,
+      });
       return res.status(401).json({
         message: 'Token inválido',
         code: 'TOKEN_INVALID',
       });
     }
 
-    logger.error('Error en autenticación:', err);
+    logger.error('Error en autenticación:', {
+      requestId,
+      path: req.originalUrl,
+      method: req.method,
+      error: err.message,
+      stack: err.stack,
+    });
     res.status(401).json({ message: 'Token is not valid' });
   }
 };

@@ -10,6 +10,7 @@ export type ValidationErrorItem = {
 
 export type RouterApiError = Error & {
   validationErrors: ValidationErrorItem[];
+  statusCode?: number;
 };
 
 const toUploadMethod = (method: RouterMethod): UploadMethod => {
@@ -99,6 +100,7 @@ export const normalizeRouterApiError = (error: unknown): RouterApiError => {
 
   const normalizedError = new Error(message) as RouterApiError;
   normalizedError.validationErrors = validationErrors;
+  normalizedError.statusCode = statusCode;
   return normalizedError;
 };
 

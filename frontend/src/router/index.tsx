@@ -138,6 +138,21 @@ async function adminDashboardLoader() {
     const summary = await fetchAPI('/dashboard/summary');
     return { user, summary };
   } catch (error) {
+    if (error instanceof Response && error.status === 401) {
+      clearStoredTokens();
+      throw redirect('/login');
+    }
+
+    const statusCode =
+      typeof error === 'object' && error !== null && 'statusCode' in error
+        ? (error as { statusCode?: number }).statusCode
+        : undefined;
+
+    if (statusCode === 401) {
+      clearStoredTokens();
+      throw redirect('/login');
+    }
+
     console.error('Error loading admin dashboard:', error);
     throw error;
   }
