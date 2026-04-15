@@ -6,12 +6,15 @@ import { formatDisplayName } from '../utils/name';
 import { buildImageUrl } from '../utils/image';
 import ImageWithFallback from '@/shell/components/ImageWithFallback';
 import { formatCubicMeters } from '../utils/format';
+import ScaffoldDataControls from '../components/ScaffoldDataControls';
 
 const ReportViewerPage: React.FC = () => {
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
+  const [exportingPDF, setExportingPDF] = useState(false);
+  const [exportingExcel, setExportingExcel] = useState(false);
 
   const { data: projects } = useGet<Project[]>('projects', '/projects');
   const { data: reports } = useGet<Report[]>(
@@ -37,6 +40,10 @@ const ReportViewerPage: React.FC = () => {
 
   const handleExport = async (format: 'pdf' | 'excel') => {
     if (!selectedProjectId) return;
+
+    const setExporting = format === 'pdf' ? setExportingPDF : setExportingExcel;
+    setExporting(true);
+
     try {
       // Se espera que la respuesta sea un Blob para la descarga del archivo.
       const response = (await post(
@@ -55,6 +62,8 @@ const ReportViewerPage: React.FC = () => {
       link.remove();
     } catch (error) {
       console.error(`Error exporting ${format}`, error);
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -63,67 +72,64 @@ const ReportViewerPage: React.FC = () => {
       <h1 className="text-4xl font-bold text-dark-blue mb-8">Visualizador de Reportes</h1>
 
       {/* Filters */}
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8 bg-white p-4 rounded-lg shadow-md items-end">
-        <div>
-          <label htmlFor="project-select" className="block text-sm font-medium text-neutral-gray">
-            Proyecto
-          </label>
-          <select
-            id="project-select"
-            value={selectedProjectId}
-            onChange={(e) => setSelectedProjectId(e.target.value)}
-            className="mt-1 appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-blue focus:border-primary-blue sm:text-sm"
-          >
-            <option value="" disabled>
-              Selecciona un proyecto
-            </option>
-            {projects?.map((p: Project) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
+      <div className="mb-8 bg-white p-4 rounded-lg shadow-md space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+          <div>
+            <label htmlFor="project-select" className="block text-sm font-medium text-neutral-gray">
+              Proyecto
+            </label>
+            <select
+              id="project-select"
+              value={selectedProjectId}
+              onChange={(e) => setSelectedProjectId(e.target.value)}
+              className="mt-1 appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-blue focus:border-primary-blue sm:text-sm"
+            >
+              <option value="" disabled>
+                Selecciona un proyecto
               </option>
-            ))}
-          </select>
+              {projects?.map((p: Project) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="start-date" className="block text-sm font-medium text-neutral-gray">
+              Fecha Desde
+            </label>
+            <input
+              type="date"
+              id="start-date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-blue focus:border-primary-blue sm:text-sm"
+            />
+          </div>
+          <div>
+            <label htmlFor="end-date" className="block text-sm font-medium text-neutral-gray">
+              Fecha Hasta
+            </label>
+            <input
+              type="date"
+              id="end-date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-blue focus:border-primary-blue sm:text-sm"
+            />
+          </div>
         </div>
-        <div>
-          <label htmlFor="start-date" className="block text-sm font-medium text-neutral-gray">
-            Fecha Desde
-          </label>
-          <input
-            type="date"
-            id="start-date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-blue focus:border-primary-blue sm:text-sm"
-          />
-        </div>
-        <div>
-          <label htmlFor="end-date" className="block text-sm font-medium text-neutral-gray">
-            Fecha Hasta
-          </label>
-          <input
-            type="date"
-            id="end-date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-blue focus:border-primary-blue sm:text-sm"
-          />
-        </div>
-        <div className="flex items-end space-x-2">
-          <button
-            onClick={() => handleExport('pdf')}
-            disabled={!selectedProjectId}
-            className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-blue disabled:opacity-50"
-          >
-            Exportar PDF
-          </button>
-          <button
-            onClick={() => handleExport('excel')}
-            disabled={!selectedProjectId}
-            className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-blue disabled:opacity-50"
-          >
-            Exportar Excel
-          </button>
-        </div>
+
+        <ScaffoldDataControls
+          onExportPDF={() => handleExport('pdf')}
+          onExportExcel={() => handleExport('excel')}
+          exportingPDF={exportingPDF}
+          exportingExcel={exportingExcel}
+          disablePDF={!selectedProjectId}
+          disableExcel={!selectedProjectId}
+          showStatusFilters={false}
+          description="Exporta reportes del proyecto según el rango de fechas seleccionado."
+        />
       </div>
 
       {/* Report Grid */}

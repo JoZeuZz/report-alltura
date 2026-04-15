@@ -5,8 +5,15 @@ import Modal from '@/shell/components/Modal';
 import { ProjectDashboard } from '@/shell';
 import ScaffoldDetailsModal from '../../components/ScaffoldDetailsModal';
 import ScaffoldTableView from '../../components/ScaffoldTableView';
+import ScaffoldDataControls, {
+  ScaffoldStatusFilter,
+} from '../../components/ScaffoldDataControls';
 import { Project, Scaffold } from '../../types/api';
 import ImageWithFallback from '@/shell/components/ImageWithFallback';
+import ProjectControlBar, {
+  ProjectControlAction,
+  ProjectControlStat,
+} from '@/shell/components/ProjectControlBar';
 import { buildImageUrl } from '../../utils/image';
 import { apiService } from '@/shell/services/apiService';
 import { formatCubicMeters } from '../../utils/format';
@@ -49,7 +56,7 @@ const ClientProjectScaffoldsPage: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const { project, scaffolds, summary } = useLoaderData() as LoaderData;
   const [selectedScaffold, setSelectedScaffold] = useState<Scaffold | null>(null);
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<ScaffoldStatusFilter>('all');
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     return (sessionStorage.getItem(`view-project-${projectId}`) as ViewMode) || 'cards';
   });
@@ -128,110 +135,84 @@ const ClientProjectScaffoldsPage: React.FC = () => {
     return scaffold.assembly_status === statusFilter;
   });
 
+  const totalScaffolds = scaffolds?.length || 0;
+  const hasScaffolds = totalScaffolds > 0;
+  const isDataView = viewMode === 'cards' || viewMode === 'table';
+  const shouldShowDataControls = isDataView && hasScaffolds;
+
+  const statusCounts = {
+    all: totalScaffolds,
+    assembled: scaffolds?.filter((item) => item.assembly_status === 'assembled').length || 0,
+    in_progress: scaffolds?.filter((item) => item.assembly_status === 'in_progress').length || 0,
+    disassembled: scaffolds?.filter((item) => item.assembly_status === 'disassembled').length || 0,
+  };
+
+  const controlActions: ProjectControlAction[] = [
+    {
+      key: 'dashboard',
+      label: 'Dashboard',
+      onClick: () => handleViewChange('dashboard'),
+      active: viewMode === 'dashboard',
+    },
+    {
+      key: 'cards',
+      label: 'Andamios',
+      onClick: () => handleViewChange('cards'),
+      active: viewMode === 'cards',
+      dataTour: 'client-scaffolds',
+    },
+    {
+      key: 'table',
+      label: 'Tabla',
+      onClick: () => handleViewChange('table'),
+      active: viewMode === 'table',
+    },
+    {
+      key: 'gallery',
+      label: 'Galeria',
+      onClick: () => navigate(`/client/project/${project.id}/gallery`),
+      variant: 'neutral',
+      dataTour: 'client-gallery',
+    },
+  ];
+
+  const controlStats: ProjectControlStat[] = [
+    {
+      label: 'Andamios',
+      value: totalScaffolds,
+    },
+    {
+      label: 'Volumen',
+      value: formatCubicMeters(summary.totalCubicMeters),
+    },
+  ];
+
   return (
-    <div className="pb-4">
-      {/* Header compacto */}
-      <div className="mb-3 sm:mb-4">
-        <h1 className="text-lg sm:text-3xl font-bold text-dark-blue">
-          {project?.name || 'Proyecto'}
-        </h1>
-        <p className="text-xs sm:text-base text-gray-500">Cliente: {project?.client_name}</p>
-      </div>
-
-      {/* Toggle de vistas - Ultra compacto en móvil */}
-      <div className="flex gap-1.5 mb-3 sm:mb-4">
-        {/* Dashboard */}
-        <button
-          onClick={() => handleViewChange('dashboard')}
-          className={`flex-1 sm:flex-none px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${
-            viewMode === 'dashboard'
-              ? 'bg-primary-blue text-white shadow-md'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-          }`}
-        >
-          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
-          </svg>
-          <span>Dashboard</span>
-        </button>
-
-        {/* Andamios (cards) */}
-        <button
-          onClick={() => handleViewChange('cards')}
-          data-tour="client-scaffolds"
-          className={`flex-1 sm:flex-none px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${
-            viewMode === 'cards'
-              ? 'bg-primary-blue text-white shadow-md'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-          }`}
-        >
-          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
-          </svg>
-          <span>Andamios</span>
-        </button>
-
-        {/* Tabla */}
-        <button
-          onClick={() => handleViewChange('table')}
-          className={`flex-1 sm:flex-none px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${
-            viewMode === 'table'
-              ? 'bg-primary-blue text-white shadow-md'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-          }`}
-        >
-          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M3 14h18M10 4v16M4 4h16a1 1 0 011 1v14a1 1 0 01-1 1H4a1 1 0 01-1-1V5a1 1 0 011-1z" />
-          </svg>
-          <span>Tabla</span>
-        </button>
-
-        {/* Galería */}
-        <button
-          onClick={() => navigate(`/client/project/${project.id}/gallery`)}
-          data-tour="client-gallery"
-          className="flex-1 sm:flex-none px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all flex items-center justify-center gap-1.5 bg-gray-100 text-gray-600 hover:bg-gray-200"
-        >
-          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M4 3a2 2 0 00-2 2v8a2 2 0 002 2h1v2a1 1 0 001.447.894L10 16.118l3.553 1.776A1 1 0 0015 17v-2h1a2 2 0 002-2V5a2 2 0 00-2-2H4z" />
-          </svg>
-          <span>Galería</span>
-        </button>
-      </div>
-
-      {/* Botones de exportación - Solo visible en vistas cards y tabla cuando HAY andamios */}
-      {(viewMode === 'cards' || viewMode === 'table') && scaffolds && scaffolds.length > 0 && (
-        <div className="flex gap-2 mb-3">
-          <button
-            onClick={handleExportPDF}
-            disabled={exporting}
-            data-tour="client-pdf"
-            className="bg-red-500 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-red-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-xs sm:text-sm font-medium shadow-sm transition-all flex items-center justify-center gap-1.5 flex-1 sm:flex-none"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-            </svg>
-            <span className="hidden sm:inline">{exporting ? 'Generando...' : 'Exportar PDF'}</span>
-            <span className="sm:hidden">PDF</span>
-          </button>
-          
-          <button
-            onClick={handleExportExcel}
-            disabled={exportingExcel}
-            className="bg-green-500 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-green-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-xs sm:text-sm font-medium shadow-sm transition-all flex items-center justify-center gap-1.5 flex-1 sm:flex-none"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            <span className="hidden sm:inline">{exportingExcel ? 'Generando...' : 'Exportar Excel'}</span>
-            <span className="sm:hidden">Excel</span>
-          </button>
-        </div>
-      )}
+    <div className="pb-4 space-y-4">
+      <ProjectControlBar
+        contextLabel="Proyecto cliente"
+        title={project?.name || 'Proyecto'}
+        subtitle={`Cliente: ${project?.client_name || '-'}`}
+        stats={controlStats}
+        actions={controlActions}
+      >
+        {shouldShowDataControls && (
+          <ScaffoldDataControls
+            statusFilter={statusFilter}
+            statusCounts={statusCounts}
+            onStatusFilterChange={setStatusFilter}
+            onExportPDF={handleExportPDF}
+            onExportExcel={handleExportExcel}
+            exportingPDF={exporting}
+            exportingExcel={exportingExcel}
+            exportPdfDataTour="client-pdf"
+          />
+        )}
+      </ProjectControlBar>
 
       {/* Dashboard */}
       {viewMode === 'dashboard' && (
-        <div data-tour="client-metrics">
+        <div data-tour="client-metrics" className="reveal-up">
           <ProjectDashboard summary={summary} projectName={project?.name} />
         </div>
       )}
@@ -239,78 +220,9 @@ const ClientProjectScaffoldsPage: React.FC = () => {
       {/* Vistas cards y tabla: filtros + contenido */}
       {(viewMode === 'cards' || viewMode === 'table') && (
         <>
-          {/* Filtros - Solo visible cuando HAY andamios */}
-          {scaffolds && scaffolds.length > 0 && (
-            <div className="mb-3 sm:mb-4">
-              <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-1.5 sm:gap-2">
-                <button
-                  onClick={() => setStatusFilter('all')}
-                  className={`px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all shadow-sm ${
-                    statusFilter === 'all'
-                      ? 'bg-primary-blue text-white shadow-md'
-                      : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
-                  }`}
-                >
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:gap-1.5">
-                    <span>Todos</span>
-                    <span className={`text-xs font-bold ${
-                      statusFilter === 'all' ? 'text-white/90' : 'text-gray-500'
-                    }`}>({scaffolds?.length || 0})</span>
-                  </div>
-                </button>
-                <button
-                  onClick={() => setStatusFilter('assembled')}
-                  className={`px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all shadow-sm ${
-                    statusFilter === 'assembled'
-                      ? 'bg-green-600 text-white shadow-md'
-                      : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
-                  }`}
-                >
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:gap-1.5">
-                    <span>Armados</span>
-                    <span className={`text-xs font-bold ${
-                      statusFilter === 'assembled' ? 'text-white/90' : 'text-gray-500'
-                    }`}>({scaffolds?.filter((s) => s.assembly_status === 'assembled').length || 0})</span>
-                  </div>
-                </button>
-                <button
-                  onClick={() => setStatusFilter('in_progress')}
-                  className={`px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all shadow-sm ${
-                    statusFilter === 'in_progress'
-                      ? 'bg-blue-600 text-white shadow-md'
-                      : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
-                  }`}
-                >
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:gap-1.5">
-                    <span className="hidden sm:inline">En Proceso</span>
-                    <span className="sm:hidden">Proceso</span>
-                    <span className={`text-xs font-bold ${
-                      statusFilter === 'in_progress' ? 'text-white/90' : 'text-gray-500'
-                    }`}>({scaffolds?.filter((s) => s.assembly_status === 'in_progress').length || 0})</span>
-                  </div>
-                </button>
-                <button
-                  onClick={() => setStatusFilter('disassembled')}
-                  className={`px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all shadow-sm ${
-                    statusFilter === 'disassembled'
-                      ? 'bg-yellow-600 text-white shadow-md'
-                      : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
-                  }`}
-                >
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:gap-1.5">
-                    <span>Desarmados</span>
-                    <span className={`text-xs font-bold ${
-                      statusFilter === 'disassembled' ? 'text-white/90' : 'text-gray-500'
-                    }`}>({scaffolds?.filter((s) => s.assembly_status === 'disassembled').length || 0})</span>
-                  </div>
-                </button>
-              </div>
-            </div>
-          )}
-
           {/* Vista Cards o Tabla */}
           {!filteredScaffolds || filteredScaffolds.length === 0 ? (
-            <div className="bg-white rounded-lg shadow-md p-12 text-center">
+            <div className="rounded-xl border border-dashed border-gray-300 bg-white p-12 text-center reveal-soft">
               <svg
                 className="mx-auto h-12 w-12 text-gray-400"
                 fill="none"
@@ -324,8 +236,8 @@ const ClientProjectScaffoldsPage: React.FC = () => {
                   d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
                 />
               </svg>
-              <h3 className="mt-2 text-sm font-medium text-gray-900">No hay andamios</h3>
-              <p className="mt-1 text-sm text-gray-500">
+              <h3 className="mt-2 heading-4 text-dark-blue">No hay andamios</h3>
+              <p className="mt-1 body-small text-gray-600">
                 {statusFilter === 'all'
                   ? 'Aún no hay andamios creados en este proyecto.'
                   : `No hay andamios ${
@@ -344,14 +256,14 @@ const ClientProjectScaffoldsPage: React.FC = () => {
               statusFilter={statusFilter}
             />
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
               {filteredScaffolds.map((scaffold) => {
                 const displayScaffoldNumber = scaffold.scaffold_number || scaffold.id;
                 return (
                 <div
                   key={scaffold.id}
                   onClick={() => setSelectedScaffold(scaffold)}
-                  className="bg-white rounded-lg shadow-md overflow-hidden cursor-pointer hover:shadow-xl transition-all hover:scale-105"
+                  className="cursor-pointer overflow-hidden rounded-xl border border-gray-100 bg-white shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
                 >
                   {/* Imagen */}
                   <div className="relative h-48 bg-gray-200">

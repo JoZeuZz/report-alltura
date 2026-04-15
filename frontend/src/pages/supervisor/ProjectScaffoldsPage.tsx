@@ -6,6 +6,10 @@ import Modal from '@/shell/components/Modal';
 import ScaffoldGrid from '../../components/ScaffoldGrid';
 import ScaffoldDetailsModal from '../../components/ScaffoldDetailsModal';
 import UploadProgress, { UploadStage } from '@/shell/components/UploadProgress';
+import ProjectControlBar, {
+  ProjectControlAction,
+  ProjectControlStat,
+} from '@/shell/components/ProjectControlBar';
 import { apiService, uploadWithProgress } from '@/shell/services/apiService';
 import { useAuth } from '@/shell/context/AuthContext';
 import {
@@ -156,6 +160,29 @@ const ProjectScaffoldsPage: React.FC = () => {
     revalidator.revalidate();
   };
 
+  const supervisorActions: ProjectControlAction[] = [
+    {
+      key: 'create-scaffold',
+      label: '+ Reportar',
+      onClick: () => navigate(`/supervisor/project/${projectId}/create-scaffold`),
+      disabled: !project?.active || !project?.client_active,
+      variant: 'primary',
+      dataTour: 'sup-scaffold-create',
+      dataTourRoute: `/supervisor/project/${projectId}/create-scaffold`,
+    },
+  ];
+
+  const supervisorStats: ProjectControlStat[] = [
+    {
+      label: 'Andamios',
+      value: scaffolds?.length || 0,
+    },
+    {
+      label: 'Estado',
+      value: project?.active && project?.client_active ? 'Operativo' : 'Solo lectura',
+    },
+  ];
+
   return (
     <div>
       <button
@@ -190,27 +217,14 @@ const ProjectScaffoldsPage: React.FC = () => {
         </div>
       )}
 
-      {/* Header responsive: vertical en móvil, horizontal en desktop */}
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-dark-blue">{project?.name}</h1>
-          <p className="text-sm sm:text-base text-neutral-gray">Cliente: {project?.client_name}</p>
-        </div>
-
-        {/* Botones de acción */}
-        <div className="flex gap-2">
-          {/* Botón Crear */}
-          <button
-            onClick={() => navigate(`/supervisor/project/${projectId}/create-scaffold`)}
-            disabled={!project?.active || !project?.client_active}
-            data-tour="sup-scaffold-create"
-            data-tour-route={`/supervisor/project/${projectId}/create-scaffold`}
-            className="bg-primary-blue text-white px-4 py-2.5 rounded-lg font-bold hover:bg-700 transition-colors shadow-lg text-sm whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            + Reportar
-          </button>
-        </div>
-      </div>
+      <ProjectControlBar
+        contextLabel="Proyecto supervisor"
+        title={project?.name || 'Proyecto'}
+        subtitle={`Cliente: ${project?.client_name || '-'}`}
+        stats={supervisorStats}
+        actions={supervisorActions}
+        className="mb-6"
+      />
 
       <h2 className="text-xl sm:text-2xl font-bold text-dark-blue mb-4">
         Andamios Reportados
