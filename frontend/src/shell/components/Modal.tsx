@@ -103,7 +103,7 @@ export default function Modal({
         `}</style>
         
         <div
-          className={`bg-white p-4 sm:p-6 md:p-8 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] sm:max-h-[85vh] overflow-y-auto ${panelClassName || ''}`}
+          className={`bg-white p-4 sm:p-6 md:p-8 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] sm:max-h-[85vh] overflow-y-auto app-scrollbar-subtle ${panelClassName || ''}`}
           onClick={(e) => e.stopPropagation()}
           style={{
             animation: 'modalSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',

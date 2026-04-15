@@ -98,7 +98,7 @@ export default function AssignSupervisorsForm({
           <span className="inline-block w-2 h-2 bg-blue-600 rounded-full mr-2"></span>
           Supervisores
         </h3>
-        <div className="max-h-48 overflow-y-auto border rounded-lg p-4 space-y-2 bg-blue-50">
+        <div className="max-h-48 overflow-y-auto app-scrollbar-subtle border rounded-lg p-4 space-y-2 bg-blue-50">
           {supervisors && supervisors.length > 0 ? (
             supervisors.map((supervisor) => (
               <label
@@ -128,7 +128,7 @@ export default function AssignSupervisorsForm({
           <span className="inline-block w-2 h-2 bg-green-600 rounded-full mr-2"></span>
           Usuarios Cliente
         </h3>
-        <div className="max-h-48 overflow-y-auto border rounded-lg p-4 space-y-2 bg-green-50">
+        <div className="max-h-48 overflow-y-auto app-scrollbar-subtle border rounded-lg p-4 space-y-2 bg-green-50">
           {filteredClientUsers && filteredClientUsers.length > 0 ? (
             filteredClientUsers.map((client) => (
               <label

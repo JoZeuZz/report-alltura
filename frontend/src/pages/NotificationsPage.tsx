@@ -110,7 +110,7 @@ export default function NotificationsPage() {
       </div>
 
       {/* Notifications List - Scrollable */}
-      <div className="flex-1 overflow-y-auto px-4" data-tour="notifications-list">
+      <div className="flex-1 overflow-y-auto app-scrollbar-subtle px-4" data-tour="notifications-list">
         {loading ? (
         <div className="flex justify-center items-center py-12">
           <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>

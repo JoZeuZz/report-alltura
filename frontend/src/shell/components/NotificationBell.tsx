@@ -113,7 +113,7 @@ export default function NotificationBell({ variant = 'light' }: NotificationBell
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto app-scrollbar-subtle">
         {loading ? (
           <div className="flex justify-center items-center py-8">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-blue"></div>

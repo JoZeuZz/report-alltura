@@ -120,7 +120,7 @@ export function ResponsiveTable<T = any>({
 
   return (
     <div className={`bg-white shadow-md rounded-lg overflow-hidden ${className}`}>
-      <div className="overflow-x-auto scrollbar-thin">
+      <div className="overflow-x-auto app-scrollbar-subtle">
         <table className="min-w-full leading-normal">
           {/* Caption para accesibilidad */}
           {caption && <caption className="sr-only">{caption}</caption>}

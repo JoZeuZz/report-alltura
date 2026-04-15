@@ -337,7 +337,7 @@ const AppLayout = () => {
               {isSidebarOpen ? <ChevronLeftIcon aria-hidden="true" /> : <ChevronRightIcon aria-hidden="true" />}
             </button>
           </div>
-          <nav data-tour="shell-navigation" className="flex-1 px-2 py-4 space-y-1 overflow-y-auto overflow-x-hidden">
+          <nav data-tour="shell-navigation" className="flex-1 px-2 py-4 space-y-1 overflow-y-auto app-scrollbar-dark overflow-x-hidden">
             <div className={!isSidebarOpen ? 'lg:space-y-2' : ''}>
               {user?.role === 'admin' ? adminLinks : user?.role === 'supervisor' ? supervisorLinks : clientLinks}
             </div>
@@ -477,7 +477,7 @@ const AppLayout = () => {
         </header>
 
         {/* --- Main Content --- */}
-        <main id="main-content" className="flex-1 w-full p-4 sm:p-6 lg:p-10 overflow-y-auto">
+        <main id="main-content" className="flex-1 w-full p-4 sm:p-6 lg:p-10 overflow-y-auto app-scrollbar-subtle">
           <Suspense fallback={
             <div className="flex items-center justify-center h-64">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-blue"></div>

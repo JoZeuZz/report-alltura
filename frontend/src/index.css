@@ -73,22 +73,138 @@
    UTILIDADES RESPONSIVE PERSONALIZADAS
    ============================================ */
 @layer utilities {
-  /* Scrollbar personalizado para tablas */
+  /* Sistema reusable de scrollbars para shell y componentes */
+  .app-scrollbar,
+  .app-scrollbar-subtle,
+  .app-scrollbar-contrast,
+  .app-scrollbar-dark,
   .scrollbar-thin {
+    --app-scrollbar-size: 6px;
+    --app-scrollbar-thumb-rgb: 156 163 175;
+    --app-scrollbar-thumb-idle-alpha: 0;
+    --app-scrollbar-thumb-hover-alpha: 0.42;
+    --app-scrollbar-thumb-active-alpha: 0.62;
+    --app-scrollbar-track-rgb: 229 231 235;
+    --app-scrollbar-track-alpha: 0;
+
     scrollbar-width: thin;
+    scrollbar-color: rgb(var(--app-scrollbar-thumb-rgb) / var(--app-scrollbar-thumb-idle-alpha))
+      rgb(var(--app-scrollbar-track-rgb) / var(--app-scrollbar-track-alpha));
   }
-  
-  .scrollbar-thin::-webkit-scrollbar {
-    height: 8px;
-    width: 8px;
+
+  .app-scrollbar-contrast {
+    --app-scrollbar-thumb-rgb: 148 163 184;
+    --app-scrollbar-thumb-hover-alpha: 0.44;
   }
-  
-  .scrollbar-thin::-webkit-scrollbar-track {
-    @apply bg-gray-100 rounded;
+
+  .app-scrollbar-dark {
+    --app-scrollbar-thumb-rgb: 203 213 225;
+    --app-scrollbar-thumb-hover-alpha: 0.38;
+    --app-scrollbar-thumb-active-alpha: 0.52;
   }
-  
-  .scrollbar-thin::-webkit-scrollbar-thumb {
-    @apply bg-gray-400 rounded hover:bg-gray-500;
+
+  .app-scrollbar:hover,
+  .app-scrollbar-subtle:hover,
+  .app-scrollbar-contrast:hover,
+  .app-scrollbar-dark:hover,
+  .scrollbar-thin:hover,
+  .app-scrollbar.app-scrollbar-active,
+  .app-scrollbar-subtle.app-scrollbar-active,
+  .app-scrollbar-contrast.app-scrollbar-active,
+  .app-scrollbar-dark.app-scrollbar-active,
+  .scrollbar-thin.app-scrollbar-active {
+    scrollbar-color: rgb(var(--app-scrollbar-thumb-rgb) / var(--app-scrollbar-thumb-hover-alpha))
+      rgb(var(--app-scrollbar-track-rgb) / var(--app-scrollbar-track-alpha));
+  }
+
+  @supports selector(::-webkit-scrollbar) {
+    .app-scrollbar::-webkit-scrollbar,
+    .app-scrollbar-subtle::-webkit-scrollbar,
+    .app-scrollbar-contrast::-webkit-scrollbar,
+    .app-scrollbar-dark::-webkit-scrollbar,
+    .scrollbar-thin::-webkit-scrollbar {
+      width: var(--app-scrollbar-size);
+      height: var(--app-scrollbar-size);
+      background-color: transparent;
+    }
+
+    .app-scrollbar::-webkit-scrollbar-track,
+    .app-scrollbar-subtle::-webkit-scrollbar-track,
+    .app-scrollbar-contrast::-webkit-scrollbar-track,
+    .app-scrollbar-dark::-webkit-scrollbar-track,
+    .scrollbar-thin::-webkit-scrollbar-track {
+      background-color: rgb(var(--app-scrollbar-track-rgb) / var(--app-scrollbar-track-alpha));
+      border-radius: 9999px;
+    }
+
+    .app-scrollbar::-webkit-scrollbar-thumb,
+    .app-scrollbar-subtle::-webkit-scrollbar-thumb,
+    .app-scrollbar-contrast::-webkit-scrollbar-thumb,
+    .app-scrollbar-dark::-webkit-scrollbar-thumb,
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+      background-color: rgb(var(--app-scrollbar-thumb-rgb) / var(--app-scrollbar-thumb-idle-alpha));
+      border-radius: 9999px;
+      transition: background-color 0.2s ease;
+    }
+
+    .app-scrollbar::-webkit-scrollbar-corner,
+    .app-scrollbar-subtle::-webkit-scrollbar-corner,
+    .app-scrollbar-contrast::-webkit-scrollbar-corner,
+    .app-scrollbar-dark::-webkit-scrollbar-corner,
+    .scrollbar-thin::-webkit-scrollbar-corner {
+      background-color: transparent;
+    }
+
+    .app-scrollbar:hover::-webkit-scrollbar-thumb,
+    .app-scrollbar-subtle:hover::-webkit-scrollbar-thumb,
+    .app-scrollbar-contrast:hover::-webkit-scrollbar-thumb,
+    .app-scrollbar-dark:hover::-webkit-scrollbar-thumb,
+    .scrollbar-thin:hover::-webkit-scrollbar-thumb,
+    .app-scrollbar.app-scrollbar-active::-webkit-scrollbar-thumb,
+    .app-scrollbar-subtle.app-scrollbar-active::-webkit-scrollbar-thumb,
+    .app-scrollbar-contrast.app-scrollbar-active::-webkit-scrollbar-thumb,
+    .app-scrollbar-dark.app-scrollbar-active::-webkit-scrollbar-thumb,
+    .scrollbar-thin.app-scrollbar-active::-webkit-scrollbar-thumb {
+      background-color: rgb(var(--app-scrollbar-thumb-rgb) / var(--app-scrollbar-thumb-hover-alpha));
+    }
+
+    .app-scrollbar::-webkit-scrollbar-thumb:active,
+    .app-scrollbar-subtle::-webkit-scrollbar-thumb:active,
+    .app-scrollbar-contrast::-webkit-scrollbar-thumb:active,
+    .app-scrollbar-dark::-webkit-scrollbar-thumb:active,
+    .scrollbar-thin::-webkit-scrollbar-thumb:active {
+      background-color: rgb(var(--app-scrollbar-thumb-rgb) / var(--app-scrollbar-thumb-active-alpha));
+    }
+  }
+
+  @media (pointer: coarse) {
+    .app-scrollbar,
+    .app-scrollbar-subtle,
+    .app-scrollbar-contrast,
+    .app-scrollbar-dark,
+    .scrollbar-thin {
+      --app-scrollbar-size: 4px;
+      --app-scrollbar-thumb-hover-alpha: 0.34;
+    }
+
+    @supports selector(::-webkit-scrollbar) {
+      .app-scrollbar::-webkit-scrollbar,
+      .app-scrollbar-subtle::-webkit-scrollbar,
+      .app-scrollbar-contrast::-webkit-scrollbar,
+      .app-scrollbar-dark::-webkit-scrollbar,
+      .scrollbar-thin::-webkit-scrollbar {
+        width: var(--app-scrollbar-size);
+        height: var(--app-scrollbar-size);
+      }
+
+      .app-scrollbar::-webkit-scrollbar-track,
+      .app-scrollbar-subtle::-webkit-scrollbar-track,
+      .app-scrollbar-contrast::-webkit-scrollbar-track,
+      .app-scrollbar-dark::-webkit-scrollbar-track,
+      .scrollbar-thin::-webkit-scrollbar-track {
+        background-color: transparent;
+      }
+    }
   }
 
   /* Sombras para indicar scroll */

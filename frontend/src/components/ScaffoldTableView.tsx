@@ -230,7 +230,7 @@ const ScaffoldTableView: React.FC<ScaffoldTableViewProps> = ({
       </div>
 
       {/* Tabla */}
-      <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-320px)] rounded-lg border border-gray-200 shadow-sm select-none">
+      <div className="overflow-x-auto overflow-y-auto app-scrollbar-contrast max-h-[calc(100vh-320px)] rounded-lg border border-gray-200 shadow-sm select-none">
         <table
           className="w-full border-collapse text-sm"
           style={{ tableLayout: 'fixed', minWidth: 'max-content' }}

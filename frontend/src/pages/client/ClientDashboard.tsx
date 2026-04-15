@@ -103,7 +103,6 @@ const ClientDashboard: React.FC = () => {
           <div>
             <h2 className="heading-2 text-dark-blue">Mis Proyectos</h2>
             <p className="body-small text-neutral-gray">
-              Vista adaptativa para uno, pocos o muchos proyectos.
             </p>
           </div>
 
