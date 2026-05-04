@@ -143,7 +143,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/clients', clientRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/scaffolds', scaffoldRoutes);
-app.use('/api', scaffoldModificationRoutes); // Incluye /scaffolds/:id/modifications y /scaffold-modifications/*
+app.use('/api', scaffoldModificationRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/supervisor-dashboard', supervisorDashboardRoutes);
