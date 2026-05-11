@@ -174,6 +174,9 @@ const AppLayout = () => {
         ? 'Supervisor'
         : 'Cliente';
 
+  const isDesktopSidebarCollapsed = !isMobile && !isSidebarOpen;
+  const showHeaderLogo = !isSidebarOpen;
+
   const linkClass = `flex items-center px-3 py-2 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors ${
     !isSidebarOpen ? 'lg:justify-center lg:px-2' : ''
   }`;
@@ -310,8 +313,10 @@ const AppLayout = () => {
 
       {/* --- Sidebar Responsive --- */}
       <nav
+        id="app-shell-sidebar"
         aria-label="Navegación principal"
         data-tour="shell-sidebar"
+        aria-hidden={isMobile && !isSidebarOpen}
         className={`fixed lg:static inset-y-0 left-0 z-40 bg-dark-blue text-white flex flex-col 
           transform lg:transform-none transition-all duration-300 ease-in-out
           ${isSidebarOpen ? 'w-64 translate-x-0' : 'w-64 -translate-x-full lg:translate-x-0 lg:w-16'}`}
@@ -320,19 +325,27 @@ const AppLayout = () => {
         <div className={`flex flex-col h-full overflow-hidden transition-all duration-300 ${
           isSidebarOpen ? 'w-64' : 'w-64 lg:w-16'
         }`}>
-          <div className="flex items-center justify-between h-20 border-b border-gray-700 px-4 flex-shrink-0 overflow-hidden">
-            <img 
-              src={logoWhite} 
-              alt="Alltura Logo" 
-              className={`h-12 w-auto transition-all duration-300 ${
-                isSidebarOpen ? 'opacity-100' : 'opacity-100 lg:opacity-0 lg:absolute lg:-left-full'
-              }`} 
-            />
+          <div className="grid grid-cols-[1fr_auto] items-center h-20 border-b border-gray-700 px-4 gap-2 flex-shrink-0 overflow-hidden">
+            <div className="min-w-0 overflow-hidden" aria-hidden={isDesktopSidebarCollapsed}>
+              <img
+                src={logoWhite}
+                alt="Alltura Logo"
+                className={`h-12 w-auto shell-logo-handoff ${
+                  isDesktopSidebarCollapsed
+                    ? 'shell-logo-handoff-hidden pointer-events-none'
+                    : 'shell-logo-handoff-visible'
+                }`}
+              />
+            </div>
+
             {/* Botón de cerrar en móvil / Botón collapse en desktop */}
-            <button 
-              onClick={() => setSidebarOpen(!isSidebarOpen)} 
-              className={`text-white flex-shrink-0 ${!isSidebarOpen ? 'lg:mx-auto' : ''}`}
+            <button
+              type="button"
+              onClick={() => setSidebarOpen(!isSidebarOpen)}
+              className="text-white flex h-10 w-10 items-center justify-center rounded-md hover:bg-gray-700 transition-colors"
               aria-label={isSidebarOpen ? "Contraer menú" : "Expandir menú"}
+              aria-controls="app-shell-sidebar"
+              aria-expanded={isSidebarOpen}
             >
               {isSidebarOpen ? <ChevronLeftIcon aria-hidden="true" /> : <ChevronRightIcon aria-hidden="true" />}
             </button>
@@ -400,12 +413,23 @@ const AppLayout = () => {
               onClick={() => setSidebarOpen(!isSidebarOpen)}
               className="text-white lg:hidden p-2 -ml-2"
               aria-label={isSidebarOpen ? "Cerrar menú de navegación" : "Abrir menú de navegación"}
+              aria-controls="app-shell-sidebar"
               aria-expanded={isSidebarOpen}
             >
               <MenuIcon aria-hidden="true" />
             </button>
 
-            <img data-tour="shell-logo" src={logoWhite} alt="Alltura Logo" className="h-8 w-auto" />
+            <img
+              data-tour="shell-logo"
+              src={logoWhite}
+              alt="Alltura Logo"
+              aria-hidden={!showHeaderLogo}
+              className={`h-8 w-auto shell-logo-handoff shell-logo-enter-desktop ${
+                showHeaderLogo
+                  ? 'shell-logo-handoff-visible'
+                  : 'shell-logo-handoff-hidden pointer-events-none'
+              }`}
+            />
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">

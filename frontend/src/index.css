@@ -4,6 +4,20 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --shell-logo-handoff-duration: 300ms;
+  --shell-logo-handoff-enter-delay-desktop: 100ms;
+  --shell-logo-handoff-shift: 0.5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --shell-logo-handoff-duration: 0.01ms;
+    --shell-logo-handoff-enter-delay-desktop: 0ms;
+    --shell-logo-handoff-shift: 0;
+  }
+}
+
 /* ============================================
    SISTEMA TIPOGRÁFICO RESPONSIVE
    ============================================ */
@@ -73,6 +87,40 @@
    UTILIDADES RESPONSIVE PERSONALIZADAS
    ============================================ */
 @layer utilities {
+  .shell-logo-handoff {
+    transition-property: opacity, transform;
+    transition-duration: var(--shell-logo-handoff-duration);
+    transition-timing-function: ease;
+  }
+
+  .shell-logo-handoff-visible {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  .shell-logo-handoff-hidden {
+    opacity: 0;
+    transform: translateX(calc(var(--shell-logo-handoff-shift) * -1));
+  }
+
+  .shell-logo-enter-desktop {
+    transition-delay: var(--shell-logo-handoff-enter-delay-desktop);
+  }
+
+  @media (max-width: 1023.98px) {
+    .shell-logo-enter-desktop {
+      transition-delay: 0ms;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .shell-logo-handoff,
+    .shell-logo-enter-desktop {
+      transition-duration: 0.01ms;
+      transition-delay: 0ms;
+    }
+  }
+
   /* Sistema reusable de scrollbars para shell y componentes */
   .app-scrollbar,
   .app-scrollbar-subtle,
