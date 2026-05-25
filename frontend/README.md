@@ -1,165 +1,109 @@
-# Proyecto de Reportabilidad - Frontend
+# Alltura — Frontend
 
-Este proyecto es la interfaz de usuario para la aplicación de reportabilidad de Alltura.
+Interfaz de usuario para el sistema de gestión de andamios. SPA construida con React 19 y TypeScript, optimizada para trabajo en campo (móvil) y administración en escritorio.
 
-## Tecnologías
+## Stack
 
-- React 19.1.1
-- TypeScript
-- Tailwind CSS 3.4.4
-- Vite 6
-- React Router v7
-- @tanstack/react-query
+| Tecnología | Versión | Rol |
+|---|---|---|
+| React | v19 | UI framework |
+| TypeScript | v5 | Tipado estático |
+| Vite | v7 | Build tool y dev server |
+| Tailwind CSS | v3 | Estilos utilitarios |
+| React Router | v7 | Enrutamiento |
+| TanStack Query | v5 | Caché, sincronización y estado del servidor |
+| React Hook Form + Zod | — | Formularios con validación tipada |
+| Axios | v1 | Cliente HTTP |
+| Vitest | v3 | Tests unitarios y de componentes |
 
-## 📱 Sistema Responsive
+## Estructura
 
-La aplicación cuenta con un **sistema de diseño responsive completo** que garantiza una experiencia óptima en todos los dispositivos.
+```
+src/
+├── components/
+│   ├── cards/          # EntityCard, ProjectCard, ClientCard, UserCard
+│   ├── dashboard/      # Componentes de métricas y gráficos
+│   ├── forms/          # FormInputs estandarizados
+│   ├── icons/          # Iconos SVG propios
+│   └── layout/         # Contenedores y componentes estructurales
+│
+├── context/            # AuthContext (sesión y rol activo)
+├── hooks/              # Custom hooks (ver más abajo)
+├── layouts/            # Layouts por rol
+├── pages/
+│   ├── admin/          # Dashboard, proyectos, usuarios, clientes, historial
+│   ├── supervisor/     # Dashboard, andamios por proyecto, crear/desarmar
+│   └── client/         # Vista de solo lectura con andamios y certificaciones
+│
+├── router/             # Definición de rutas y guards por rol
+├── services/           # Clientes de API (una función por endpoint)
+├── types/              # Interfaces TypeScript compartidas
+└── utils/              # Helpers (formateo, compresión de imágenes, etc.)
+```
 
-### Breakpoints Personalizados
+## Custom Hooks
 
-| Breakpoint | Ancho | Dispositivo |
-|------------|-------|-------------|
+| Hook | Descripción |
+|---|---|
+| `useBreakpoint` | Breakpoint activo (`base` \| `xs` \| `sm` \| `md` \| `lg` \| `xl` \| `2xl`) |
+| `useBreakpoints` | Flags booleanos: `isMobile`, `isTablet`, `isDesktop` |
+| `useMediaQuery` | Media query arbitraria |
+| `useScaffoldPermissions` | Permisos del usuario sobre un andamio concreto |
+| `useScaffoldValidation` | Validaciones de negocio (estados, progreso) |
+| `useScaffoldModifications` | CRUD de secciones/modificaciones de andamio |
+| `useClientNotes` | Notas de cliente por proyecto |
+| `useNotifications` | Suscripción y estado de push notifications |
+| `useGet` / `useMutate` | Wrappers tipados sobre TanStack Query |
+| `useFormErrors` | Normalización de errores de API a React Hook Form |
+
+## Responsive
+
+La app tiene dos modos de uso principales:
+
+- **Móvil (supervisores en campo):** flujo de creación/actualización de andamios, cambio de estados, carga de fotos y certificaciones
+- **Escritorio (administradores):** dashboard global, gestión de usuarios/proyectos/clientes, reportes
+
+Breakpoints de Tailwind extendidos:
+
+| Token | Ancho | Uso típico |
+|---|---|---|
 | `xs` | 480px | Smartphones grandes |
 | `sm` | 640px | Tablets pequeñas |
 | `md` | 768px | Tablets |
-| `lg` | 1024px | Laptops/Desktop |
-| `xl` | 1280px | Pantallas grandes |
-| `2xl` | 1536px | Pantallas muy grandes |
+| `lg` | 1024px | Laptops |
+| `xl` | 1280px | Desktop |
+| `2xl` | 1536px | Pantallas grandes |
 
-### Hooks Disponibles
+## PWA
 
-```tsx
-import { useBreakpoint, useBreakpoints, useMediaQuery } from './hooks';
+- Service Worker registrado en `public/sw.js`
+- `public/manifest.json` con iconos en múltiples resoluciones
+- Capacidades offline para lectura de datos cacheados
+- Push notifications vía VAPID (requiere permiso del usuario)
 
-// Hook para breakpoint actual
-const breakpoint = useBreakpoint(); // 'base' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl'
+## Variables de Entorno
 
-// Hook para múltiples estados
-const { isMobile, isTablet, isDesktop, isLg, isXl } = useBreakpoints();
+| Variable | Descripción | Default |
+|---|---|---|
+| `VITE_IMAGE_MAX_MB` | Tamaño máximo de imagen en cliente (MB) | `25` |
 
-// Hook para media queries personalizadas
-const isDark = useMediaQuery('(prefers-color-scheme: dark)');
+> Copiar `frontend/.env.example` como `frontend/.env` para desarrollo local.
+
+En producción, el build se genera en tiempo de Docker con `--build-arg VITE_IMAGE_MAX_MB=<valor>`.
+
+## Scripts
+
+```bash
+npm run dev          # Vite dev server (http://localhost:5173)
+npm run build        # Build de producción → dist/
+npm run preview      # Preview del build de producción
+npm test             # Vitest (una sola pasada)
+npm run lint         # ESLint + TypeScript
+npm run format       # Prettier sobre src/
 ```
 
-### Componentes Responsive
+## Deploy
 
-#### ResponsiveGrid
-Grid adaptativo con variantes predefinidas:
+El build de producción (`dist/`) es servido por **nginx**. La configuración del servidor (`nginx.conf.template`) reemplaza variables de entorno en runtime vía `docker-entrypoint.sh`, lo que permite configurar `BACKEND_URL` sin reconstruir la imagen.
 
-```tsx
-import { ResponsiveGrid } from './components/layout';
-
-// Variantes: 'cards' | 'stats' | 'compact' | 'wide'
-<ResponsiveGrid variant="cards" gap="lg">
-  {items.map(item => <Card key={item.id} {...item} />)}
-</ResponsiveGrid>
-```
-
-#### Container & Section
-Contenedores con ancho máximo y padding responsive:
-
-```tsx
-import { Container, Section } from './components/layout';
-
-<Container variant="default" padding="md">
-  <Section variant="card" padding="lg">
-    {/* Contenido */}
-  </Section>
-</Container>
-```
-
-#### ResponsiveTable
-Tabla con scroll horizontal y ocultación de columnas:
-
-```tsx
-import { ResponsiveTable } from './components/layout';
-
-<ResponsiveTable
-  columns={[
-    { key: 'name', header: 'Nombre' },
-    { key: 'email', header: 'Email', hideOnMobile: true },
-  ]}
-  data={items}
-  onRowClick={handleClick}
-/>
-```
-
-#### Componentes de Formulario
-Inputs optimizados con touch targets y accesibilidad:
-
-```tsx
-import { FormInput, FormSelect, FormTextarea, FormButtons } from './components/forms';
-
-<FormInput
-  id="email"
-  name="email"
-  label="Correo Electrónico"
-  type="email"
-  required
-  error={errors?.email}
-/>
-
-<FormButtons
-  submitText="Guardar"
-  onCancel={handleCancel}
-  isSubmitting={isSubmitting}
-/>
-```
-
-### Sistema Tipográfico
-
-Clases estandarizadas con tamaños responsive:
-
-```tsx
-<h1 className="heading-1">Título Principal</h1>
-<h2 className="heading-2">Subtítulo</h2>
-<p className="body-base">Texto normal</p>
-<p className="body-small text-gray-500">Texto secundario</p>
-<span className="stat-large text-primary-blue">1,234</span>
-```
-
-**Clases disponibles:**
-- Headings: `heading-hero`, `heading-1`, `heading-2`, `heading-3`, `heading-4`
-- Body: `body-large`, `body-base`, `body-small`
-- Labels: `label-large`, `label-base`
-- Stats: `stat-large`, `stat-base`, `stat-small`
-
-### Documentación Completa
-
-Para más detalles sobre el sistema responsive, consulta:
-📖 **[Guía de Sistema Responsive](./docs/RESPONSIVE_GUIDE.md)**
-
-Incluye:
-- Ejemplos de uso completos
-- Mejores prácticas
-- Patrones de diseño
-- Guía de accesibilidad
-
-## Scripts Disponibles
-
-En el directorio del proyecto, puedes ejecutar:
-
-### `npm run dev`
-
-Ejecuta la aplicación en modo de desarrollo con Vite.\
-Abre http://localhost:5173 (o el puerto que indique Vite) para verla en tu navegador.
-
-La página se recargará si haces cambios.\
-También verás cualquier error de lint en la consola.
-
-### `npm test`
-
-Lanza el corredor de pruebas en modo interactivo.
-
-### `npm run build`
-
-Construye la aplicación para producción en la carpeta `dist`.\
-Empaqueta React correctamente en modo de producción y optimiza la compilación para obtener el mejor rendimiento.
-
-### `npm run preview`
-
-Sirve la build de producción de forma local para previsualizarla.
-
-## Aprender Más
-
-Para aprender React, consulta la [documentación de React](https://reactjs.org/).
+Ver documentación completa en `docs/` (raíz del monorepo).
