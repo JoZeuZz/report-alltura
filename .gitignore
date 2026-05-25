@@ -31,4 +31,6 @@ AGENTS.MD
 .vscode/
 .superpowers/
 .serena/
+.gitingest-ignore
+docs/standardization/
 backups/
