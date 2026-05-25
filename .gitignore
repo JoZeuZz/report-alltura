@@ -22,3 +22,12 @@ digest.txt
 # Runtime logs backend (no versionar)
 backend/logs/
 backend/src/logs/
+graphify-out/
+
+
+CLAUDE.MD
+AGENTS.MD
+.claude/
+.vscode/
+.superpowers/
+backups/
