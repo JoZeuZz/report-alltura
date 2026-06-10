@@ -6,7 +6,6 @@ node_modules
 postgres-data/
 .github/
 docs/*
-!docs/superpowers/
 !docs/standardization/
 docs/standardization/*
 !docs/standardization/alltura-shell-boundary.md
