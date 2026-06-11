@@ -88,7 +88,7 @@ services:
         condition: service_healthy
     restart: unless-stopped
     stop_grace_period: 30s
-    mem_limit: 512m
+    mem_limit: 1g
     networks:
       alltura_network:
         aliases:
