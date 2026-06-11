@@ -97,5 +97,13 @@ describe('imageCache', () => {
       ).not.toThrow();
       await new Promise((r) => setImmediate(r));
     });
+
+    test('usa TTL por defecto cuando no se pasa ttlSeconds', async () => {
+      const data = Buffer.from('img');
+      imageCache.set('imgproxy:defaultttltest', { contentType: 'image/jpeg', etag: null, data });
+      await new Promise((r) => setImmediate(r));
+      const [, ttl] = mockClient.setEx.mock.calls[0];
+      expect(ttl).toBe(14400);
+    });
   });
 });

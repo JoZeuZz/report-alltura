@@ -3,11 +3,12 @@ const crypto = require('crypto');
 const { logger } = require('./logger');
 const redisClient = require('./redis');
 
-const TTL = parseInt(process.env.IMAGE_PROXY_CACHE_TTL_SECONDS || '14400', 10);
+const _ttlRaw = parseInt(process.env.IMAGE_PROXY_CACHE_TTL_SECONDS || '14400', 10);
+const TTL = Number.isFinite(_ttlRaw) && _ttlRaw > 0 ? _ttlRaw : 14400;
 const ENABLED = (process.env.IMAGE_PROXY_CACHE_ENABLED || 'true').toLowerCase() !== 'false';
 
 const buildKey = (bucketName, objectName, size) => {
-  const raw = `${bucketName}:${objectName}:${size}`;
+  const raw = [bucketName, objectName, size].join('\0');
   return `imgproxy:${crypto.createHash('sha256').update(raw).digest('hex').slice(0, 16)}`;
 };
 
