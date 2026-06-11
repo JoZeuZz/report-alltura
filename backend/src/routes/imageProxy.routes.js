@@ -8,6 +8,7 @@ const { logger } = require('../lib/logger');
 const { createRedisRateLimiter, getRateLimitConfig } = require('../middleware/rateLimit');
 const { sharpSemaphore, TIMEOUT_MS } = require('../lib/imageSemaphore');
 const imageCache = require('../lib/imageCache');
+const { processWithSharp } = require('../lib/imageProcessing');
 
 const router = express.Router();
 
@@ -61,22 +62,6 @@ const stripEtag = (etag) => {
   clean = clean.replace(/^"+|"+$/g, '');
   return clean;
 };
-
-// Streams inputStream through Sharp resize, returns output Buffer.
-// Caller must hold the semaphore before calling this and release after.
-const processWithSharp = (inputStream, preset) =>
-  new Promise((resolve, reject) => {
-    const transformer = sharp({ failOnError: false })
-      .rotate()
-      .resize({ width: preset.width, height: preset.height, fit: 'inside', withoutEnlargement: true });
-
-    const chunks = [];
-    transformer.on('error', reject);
-    transformer.on('data', (chunk) => chunks.push(chunk));
-    transformer.on('end', () => resolve(Buffer.concat(chunks)));
-    inputStream.on('error', (err) => { transformer.destroy(); reject(err); });
-    inputStream.pipe(transformer);
-  });
 
 // Returns false and sends 503 when semaphore queue times out, true when acquired.
 const acquireSemaphoreOrReject = async (res) => {
@@ -182,9 +167,9 @@ router.get('/', async (req, res) => {
 
         try {
           const inputStream = fs.createReadStream(resolvedPath);
-          const outputBuffer = await processWithSharp(inputStream, preset);
-          imageCache.set(cacheKey, { contentType, etag: resolvedEtag, data: outputBuffer });
-          res.setHeader('Content-Type', contentType);
+          const { data: outputBuffer, resolvedContentType } = await processWithSharp(inputStream, preset, contentType);
+          imageCache.set(cacheKey, { contentType: resolvedContentType, etag: resolvedEtag, data: outputBuffer });
+          res.setHeader('Content-Type', resolvedContentType);
           res.setHeader('Cache-Control', `private, max-age=${cacheMaxAge}`);
           return res.end(outputBuffer);
         } finally {
@@ -258,9 +243,9 @@ router.get('/', async (req, res) => {
 
       try {
         const gcsStream = file.createReadStream();
-        const outputBuffer = await processWithSharp(gcsStream, preset);
-        imageCache.set(cacheKey, { contentType, etag: resolvedEtag, data: outputBuffer });
-        res.setHeader('Content-Type', contentType);
+        const { data: outputBuffer, resolvedContentType } = await processWithSharp(gcsStream, preset, contentType);
+        imageCache.set(cacheKey, { contentType: resolvedContentType, etag: resolvedEtag, data: outputBuffer });
+        res.setHeader('Content-Type', resolvedContentType);
         res.setHeader('Cache-Control', metadata.cacheControl || `private, max-age=${cacheMaxAge}`);
         return res.end(outputBuffer);
       } finally {
