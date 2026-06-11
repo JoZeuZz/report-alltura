@@ -43,6 +43,13 @@ describe('Semaphore', () => {
     expect(sem.current).toBe(0);
   });
 
+  test('release en semáforo idle no lleva current a negativo', () => {
+    const sem = new Semaphore(2);
+    expect(sem.current).toBe(0);
+    sem.release(); // should be no-op, not underflow
+    expect(sem.current).toBe(0);
+  });
+
   test('acquireWithTimeout resuelve si hay slot disponible', async () => {
     const sem = new Semaphore(2);
     await expect(sem.acquireWithTimeout(100)).resolves.toBeUndefined();

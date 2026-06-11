@@ -20,7 +20,7 @@ class Semaphore {
   release() {
     if (this.queue.length > 0) {
       this.queue.shift()();
-    } else {
+    } else if (this.current > 0) {
       this.current--;
     }
   }
@@ -58,8 +58,11 @@ class Semaphore {
   }
 }
 
-const MAX = parseInt(process.env.SHARP_CONCURRENCY || '6', 10);
-const TIMEOUT_MS = parseInt(process.env.SHARP_QUEUE_TIMEOUT_MS || '8000', 10);
+const _maxRaw = parseInt(process.env.SHARP_CONCURRENCY || '6', 10);
+const MAX = Number.isFinite(_maxRaw) && _maxRaw > 0 ? _maxRaw : 6;
+
+const _timeoutRaw = parseInt(process.env.SHARP_QUEUE_TIMEOUT_MS || '8000', 10);
+const TIMEOUT_MS = Number.isFinite(_timeoutRaw) && _timeoutRaw > 0 ? _timeoutRaw : 8000;
 
 const sharpSemaphore = new Semaphore(MAX);
 
