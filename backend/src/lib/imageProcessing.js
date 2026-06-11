@@ -27,7 +27,7 @@ const processWithSharp = (inputStream, preset, fallbackContentType) =>
     let sharpInfo = null;
 
     transformer.on('info', (info) => { sharpInfo = info; });
-    transformer.on('error', reject);
+    transformer.on('error', (err) => { inputStream.destroy(); reject(err); });
     transformer.on('data', (chunk) => chunks.push(chunk));
     transformer.on('end', () => {
       const fmt = sharpInfo?.format;
