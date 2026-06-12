@@ -65,9 +65,10 @@ async function runMigrations(pool) {
     try {
       if (useTransaction) await client.query('BEGIN');
       await client.query(sql);
+      const description = version.replace(/^\d{8}_\d+_/, '').replace(/-/g, ' ');
       await client.query(
-        'INSERT INTO schema_migrations (version, checksum) VALUES ($1, $2)',
-        [version, checksum]
+        'INSERT INTO schema_migrations (version, description, checksum) VALUES ($1, $2, $3)',
+        [version, description, checksum]
       );
       if (useTransaction) await client.query('COMMIT');
       appliedCount++;
