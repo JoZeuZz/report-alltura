@@ -9,15 +9,15 @@ const pool = new Pool(getPoolConfig());
 async function runMigration(migrationFile) {
   console.log(`Running migration: ${migrationFile}`);
   const client = await pool.connect();
-  
+
   try {
     const migrationPath = path.resolve(__dirname, '../db/migrations', migrationFile);
     const sql = fs.readFileSync(migrationPath, 'utf8');
-    
+
     await client.query('BEGIN');
     await client.query(sql);
     await client.query('COMMIT');
-    
+
     console.log(`✓ Migration ${migrationFile} completed successfully`);
   } catch (err) {
     await client.query('ROLLBACK');
@@ -30,12 +30,16 @@ async function runMigration(migrationFile) {
 
 async function main() {
   const migrationFile = process.argv[2];
-  
+
   if (!migrationFile) {
     console.error('Usage: node run_migration.js <migration_file.sql>');
     process.exit(1);
   }
-  
+
+  console.warn('⚠️  DEPRECADO: Las migraciones se aplican automáticamente al iniciar el backend.');
+  console.warn('   Este script solo debe usarse para debugging o migraciones fuera de ciclo.');
+  console.warn('   Los archivos SQL deben vivir en backend/src/db/migrations/');
+
   try {
     await runMigration(migrationFile);
     console.log('\n✓ All migrations completed successfully');
