@@ -3,6 +3,7 @@ require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
 const { Pool } = require('pg');
 const { logger } = require('../lib/logger');
 const { getPoolConfig } = require('./poolConfig');
+const { runMigrations } = require('./migrationRunner');
 
 const pool = new Pool(getPoolConfig());
 
@@ -561,6 +562,9 @@ const initializeDatabase = async () => {
   } finally {
     client.release();
   }
+
+  // Aplicar migraciones SQL versionadas (ejecuta solo las pendientes)
+  await runMigrations(pool);
 };
 
 module.exports = { initializeDatabase, pool };
