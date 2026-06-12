@@ -90,6 +90,9 @@ CREATE TABLE IF NOT EXISTS scaffold_sections (
 
 CREATE INDEX IF NOT EXISTS idx_scaffold_sections_scaffold ON scaffold_sections(scaffold_id, section_order);
 CREATE UNIQUE INDEX IF NOT EXISTS uq_scaffolds_project_scaffold_number ON scaffolds(project_id, scaffold_number) WHERE scaffold_number IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_scaffolds_project ON scaffolds(project_id, assembly_created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_scaffolds_created_by ON scaffolds(created_by, assembly_created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_scaffolds_user ON scaffolds(user_id);
 
 -- Creación de la tabla de historial de andamios
 -- Historial inmutable: sobrevive a la eliminación de andamios
@@ -111,6 +114,7 @@ CREATE TABLE IF NOT EXISTS scaffold_history (
 
 -- Índice para optimizar consultas de historial por usuario
 CREATE INDEX IF NOT EXISTS idx_scaffold_history_user ON scaffold_history(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_scaffold_history_scaffold ON scaffold_history(scaffold_id, change_type, created_at);
 
 -- Creación de la tabla intermedia para asignar usuarios a proyectos
 CREATE TABLE IF NOT EXISTS project_users (
