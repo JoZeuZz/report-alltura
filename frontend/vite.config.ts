@@ -18,7 +18,9 @@ export default defineConfig(({ mode }) => {
   const devApiProxyTarget =
     readEnvTarget(env.VITE_DEV_API_PROXY_TARGET) ?? readEnvTarget(env.BACKEND_URL);
 
-  if (isDev && !devApiProxyTarget) {
+  const isTest = mode === 'test' || process.env.VITEST === 'true';
+
+  if (isDev && !isTest && !devApiProxyTarget) {
     throw new Error(
       '[vite] Debes definir VITE_DEV_API_PROXY_TARGET o BACKEND_URL para habilitar el proxy /api en desarrollo.'
     );
@@ -47,13 +49,17 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 3000,
       open: true,
-      proxy: {
-        '/api': {
-          target: devApiProxyTarget as string,
-          changeOrigin: true,
-          secure: false,
-        },
-      },
+      ...(devApiProxyTarget
+        ? {
+            proxy: {
+              '/api': {
+                target: devApiProxyTarget,
+                changeOrigin: true,
+                secure: false,
+              },
+            },
+          }
+        : {}),
     },
     test: {
       globals: true,

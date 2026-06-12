@@ -17,6 +17,7 @@ module.exports = {
     },
   },
   coverageReporters: ['text', 'lcov', 'html'],
+  setupFiles: ['<rootDir>/src/tests/setupEnv.js'],
   testMatch: ['**/__tests__/**/*.js', '**/?(*.)+(spec|test).js'],
   clearMocks: true,
   forceExit: true,
