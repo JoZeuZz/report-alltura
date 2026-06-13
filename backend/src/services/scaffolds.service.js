@@ -204,7 +204,12 @@ class ScaffoldService {
         error.statusCode = 403;
         throw error;
       }
+      return;
     }
+
+    const error = new Error('No tienes permisos para modificar este andamio.');
+    error.statusCode = 403;
+    throw error;
   }
 
   /**
@@ -823,8 +828,8 @@ class ScaffoldService {
 
     // Actualizar andamio a desarmado
     const query = `
-      UPDATE scaffolds 
-      SET assembly_status = 'disassembled', 
+      UPDATE scaffolds
+      SET assembly_status = 'disassembled',
           card_status = NULL,
           disassembly_image_url = $1,
           disassembly_notes = $2,
@@ -834,33 +839,48 @@ class ScaffoldService {
       RETURNING *
     `;
 
-    const { rows } = await db.query(query, [disassemblyImageUrl, disassemblyNotes || null, scaffoldId]);
-    const updated = rows[0];
+    try {
+      const { rows } = await db.query(query, [disassemblyImageUrl, disassemblyNotes || null, scaffoldId]);
+      const updated = rows[0];
 
-    // Registrar en historial
-    await ScaffoldHistory.create({
-      scaffold_id: scaffoldId,
-      user_id: user.id,
-      change_type: 'disassemble',
-      previous_data: {
-        assembly_status: scaffold.assembly_status,
-        card_status: scaffold.card_status,
-      },
-      new_data: {
-        assembly_status: 'disassembled',
-        card_status: null,
-        disassembly_image: disassemblyImageUrl,
-        disassembly_notes: disassemblyNotes || null,
-      },
-      description: 'Andamio desarmado con pruebas fotográficas',
-      scaffold_number: scaffold.scaffold_number,
-      project_name: project.name,
-      area: scaffold.area,
-      tag: scaffold.tag,
-    });
+      if (!updated) {
+        const error = new Error('El andamio no pudo ser actualizado (no encontrado).');
+        error.statusCode = 404;
+        throw error;
+      }
 
-    logger.info(`Andamio ${scaffoldId} desarmado por usuario ${user.id}`);
-    return await this._resolveScaffoldImages(updated);
+      // Registrar en historial
+      await ScaffoldHistory.create({
+        scaffold_id: scaffoldId,
+        user_id: user.id,
+        change_type: 'disassemble',
+        previous_data: {
+          assembly_status: scaffold.assembly_status,
+          card_status: scaffold.card_status,
+        },
+        new_data: {
+          assembly_status: 'disassembled',
+          card_status: null,
+          disassembly_image: disassemblyImageUrl,
+          disassembly_notes: disassemblyNotes || null,
+        },
+        description: 'Andamio desarmado con pruebas fotográficas',
+        scaffold_number: scaffold.scaffold_number,
+        project_name: project.name,
+        area: scaffold.area,
+        tag: scaffold.tag,
+      });
+
+      logger.info(`Andamio ${scaffoldId} desarmado por usuario ${user.id}`);
+      return await this._resolveScaffoldImages(updated);
+    } catch (error) {
+      try {
+        await deleteFileByUrl(disassemblyImageUrl);
+      } catch (cleanupError) {
+        logger.error('No se pudo limpiar imagen de desarmado huérfana:', cleanupError);
+      }
+      throw error;
+    }
   }
 
   /**

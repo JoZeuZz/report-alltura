@@ -88,12 +88,18 @@ describe('ScaffoldService - autorización y máquina de estados', () => {
       expect(err.statusCode).toBe(403);
     });
 
-    it('role client no lanza — Laguna conocida: el service no es deny-by-default; se corrige en plan 005', () => {
-      // TODO plan 005: deny-by-default
+    it('role client lanza 403 (deny-by-default)', () => {
       const user = { id: 6, role: 'client' };
       const scaffold = { created_by: 99 };
       const project = { assigned_supervisor_id: 99 };
-      expect(() => ScaffoldService.validateUserPermissions(user, scaffold, project)).not.toThrow();
+      let err;
+      try {
+        ScaffoldService.validateUserPermissions(user, scaffold, project);
+      } catch (e) {
+        err = e;
+      }
+      expect(err).toBeDefined();
+      expect(err.statusCode).toBe(403);
     });
   });
 
