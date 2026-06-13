@@ -4,7 +4,6 @@ node_modules
 .postgres.env
 .coolify/
 postgres-data/
-.github/
 docs/*
 !docs/standardization/
 docs/standardization/*
