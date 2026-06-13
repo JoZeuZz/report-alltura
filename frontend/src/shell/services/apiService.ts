@@ -7,6 +7,7 @@ import {
 
 export const apiService = axios.create({
   baseURL: '/api',
+  withCredentials: true,
 });
 
 // Interceptor de peticiones: Agregar token de autenticación

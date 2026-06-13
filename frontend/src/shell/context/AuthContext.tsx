@@ -32,29 +32,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     const initializeAuth = async () => {
       try {
+        // Access token vive en memoria; intentar refresh silencioso para restaurar sesión tras recarga
         let token = getStoredAccessToken();
-        if (token && typeof token === 'string') {
-          const decodedUser = jwtDecode<{ user: User; exp: number }>(token);
-          const isExpired = decodedUser.exp * 1000 < Date.now();
+        if (!token) {
+          token = await refreshAccessToken();
+        }
 
-          if (isExpired) {
-            const refreshedToken = await refreshAccessToken();
-            if (!refreshedToken) {
-              clearStoredTokens();
-              if (isMounted) setUser(null);
-              return;
-            }
-            token = refreshedToken;
-          }
-
-          const freshDecoded = jwtDecode<{ user: User }>(token);
-          if (isMounted) {
-            setUser(freshDecoded.user);
-          }
+        if (!token) {
+          if (isMounted) setUser(null);
           return;
         }
 
-        if (isMounted) setUser(null);
+        const decoded = jwtDecode<{ user: User }>(token);
+        if (isMounted) {
+          setUser(decoded.user);
+        }
       } catch (error) {
         console.error('Error validating token on mount:', error);
         clearStoredTokens();
@@ -73,13 +65,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = useCallback(async (email: string, password: string) => {
     try {
-      const response = await api.post<{ accessToken: string; refreshToken: string; user: User }>('/auth/login', { email, password });
-      const { accessToken, refreshToken, user } = response;
+      const response = await api.post<{ accessToken: string; user: User }>('/auth/login', { email, password });
+      const { accessToken, user } = response;
 
-      // Guardar tokens con contrato único de sesión
-      storeTokens(accessToken, refreshToken);
-      
-      // Establecer usuario desde la respuesta del backend
+      storeTokens(accessToken);
       setUser(user);
       return true;
     } catch (error) {

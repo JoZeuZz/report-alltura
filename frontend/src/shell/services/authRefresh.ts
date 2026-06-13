@@ -1,49 +1,41 @@
 type RefreshResponse = {
   accessToken?: string;
-  refreshToken?: string;
 };
+
+// Migración: eliminar tokens viejos de localStorage de sesiones anteriores
+const LEGACY_KEYS = ['accessToken', 'refreshToken'] as const;
+LEGACY_KEYS.forEach((key) => localStorage.removeItem(key));
+
+let inMemoryAccessToken: string | null = null;
 
 export const TOKEN_STORAGE_KEYS = {
   accessToken: 'accessToken',
   refreshToken: 'refreshToken',
 } as const;
 
-let refreshPromise: Promise<string | null> | null = null;
+export const getStoredAccessToken = (): string | null => inMemoryAccessToken;
 
-export const getStoredAccessToken = () =>
-  localStorage.getItem(TOKEN_STORAGE_KEYS.accessToken);
-
-export const getStoredRefreshToken = () =>
-  localStorage.getItem(TOKEN_STORAGE_KEYS.refreshToken);
-
-export const storeTokens = (accessToken?: string, refreshToken?: string) => {
+export const storeTokens = (accessToken?: string) => {
   if (accessToken) {
-    localStorage.setItem(TOKEN_STORAGE_KEYS.accessToken, accessToken);
-  }
-
-  if (refreshToken) {
-    localStorage.setItem(TOKEN_STORAGE_KEYS.refreshToken, refreshToken);
+    inMemoryAccessToken = accessToken;
   }
 };
 
 export const clearStoredTokens = () => {
-  localStorage.removeItem(TOKEN_STORAGE_KEYS.accessToken);
-  localStorage.removeItem(TOKEN_STORAGE_KEYS.refreshToken);
+  inMemoryAccessToken = null;
 };
 
-const runRefresh = async (): Promise<string | null> => {
-  const refreshToken = getStoredRefreshToken();
-  if (!refreshToken) {
-    return null;
-  }
+let refreshPromise: Promise<string | null> | null = null;
 
+const runRefresh = async (): Promise<string | null> => {
   try {
     const response = await fetch('/api/auth/refresh', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ refreshToken }),
+      credentials: 'include',
+      body: JSON.stringify({}),
     });
 
     if (!response.ok) {
@@ -55,7 +47,7 @@ const runRefresh = async (): Promise<string | null> => {
       return null;
     }
 
-    storeTokens(data.accessToken, data.refreshToken);
+    storeTokens(data.accessToken);
     return data.accessToken;
   } catch (_error) {
     return null;

@@ -13,38 +13,69 @@ describe('authRefresh service', () => {
     vi.unstubAllGlobals();
   });
 
-  it('storeTokens y clearStoredTokens mantienen el contrato de storage', async () => {
+  it('storeTokens guarda en memoria, getStoredAccessToken lo lee', async () => {
     const authRefresh = await import('@/shell/services/authRefresh');
 
-    authRefresh.storeTokens('access-1', 'refresh-1');
-    expect(localStorage.getItem(authRefresh.TOKEN_STORAGE_KEYS.accessToken)).toBe('access-1');
-    expect(localStorage.getItem(authRefresh.TOKEN_STORAGE_KEYS.refreshToken)).toBe('refresh-1');
+    authRefresh.storeTokens('access-1');
+    expect(authRefresh.getStoredAccessToken()).toBe('access-1');
 
     authRefresh.storeTokens('access-2');
-    expect(localStorage.getItem(authRefresh.TOKEN_STORAGE_KEYS.accessToken)).toBe('access-2');
-    expect(localStorage.getItem(authRefresh.TOKEN_STORAGE_KEYS.refreshToken)).toBe('refresh-1');
+    expect(authRefresh.getStoredAccessToken()).toBe('access-2');
 
     authRefresh.clearStoredTokens();
-    expect(localStorage.getItem(authRefresh.TOKEN_STORAGE_KEYS.accessToken)).toBeNull();
-    expect(localStorage.getItem(authRefresh.TOKEN_STORAGE_KEYS.refreshToken)).toBeNull();
+    expect(authRefresh.getStoredAccessToken()).toBeNull();
   });
 
-  it('refreshAccessToken retorna null cuando no hay refresh token', async () => {
-    const fetchMock = vi.fn();
-    vi.stubGlobal('fetch', fetchMock);
+  it('storeTokens nunca escribe en localStorage', async () => {
+    const authRefresh = await import('@/shell/services/authRefresh');
+    const setItemSpy = vi.spyOn(Storage.prototype, 'setItem');
+
+    authRefresh.storeTokens('access-1');
+
+    expect(setItemSpy).not.toHaveBeenCalledWith(authRefresh.TOKEN_STORAGE_KEYS.accessToken, expect.anything());
+    expect(setItemSpy).not.toHaveBeenCalledWith(authRefresh.TOKEN_STORAGE_KEYS.refreshToken, expect.anything());
+  });
+
+  it('refreshAccessToken llama fetch con credentials include', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+    });
+    vi.stubGlobal('fetch', fetchMock as unknown as typeof fetch);
     const authRefresh = await import('@/shell/services/authRefresh');
 
     const token = await authRefresh.refreshAccessToken();
 
     expect(token).toBeNull();
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/auth/refresh',
+      expect.objectContaining({
+        method: 'POST',
+        credentials: 'include',
+      })
+    );
+  });
+
+  it('refreshAccessToken guarda access token en memoria tras éxito', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ accessToken: 'access-nuevo' }),
+    });
+    vi.stubGlobal('fetch', fetchMock as unknown as typeof fetch);
+    const authRefresh = await import('@/shell/services/authRefresh');
+
+    const token = await authRefresh.refreshAccessToken();
+
+    expect(token).toBe('access-nuevo');
+    expect(authRefresh.getStoredAccessToken()).toBe('access-nuevo');
+    // No debe escribir en localStorage
+    expect(localStorage.getItem(authRefresh.TOKEN_STORAGE_KEYS.accessToken)).toBeNull();
   });
 
   it('refreshAccessToken evita llamadas duplicadas concurrentes', async () => {
-    localStorage.setItem('refreshToken', 'refresh-inicial');
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ accessToken: 'access-nuevo', refreshToken: 'refresh-nuevo' }),
+      json: async () => ({ accessToken: 'access-nuevo' }),
     });
     vi.stubGlobal('fetch', fetchMock as unknown as typeof fetch);
     const authRefresh = await import('@/shell/services/authRefresh');
@@ -57,13 +88,5 @@ describe('authRefresh service', () => {
     expect(first).toBe('access-nuevo');
     expect(second).toBe('access-nuevo');
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(fetchMock).toHaveBeenCalledWith(
-      '/api/auth/refresh',
-      expect.objectContaining({
-        method: 'POST',
-      })
-    );
-    expect(localStorage.getItem(authRefresh.TOKEN_STORAGE_KEYS.accessToken)).toBe('access-nuevo');
-    expect(localStorage.getItem(authRefresh.TOKEN_STORAGE_KEYS.refreshToken)).toBe('refresh-nuevo');
   });
 });
