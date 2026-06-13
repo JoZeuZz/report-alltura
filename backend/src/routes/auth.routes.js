@@ -73,7 +73,7 @@ const loginSchema = Joi.object({
 });
 
 const refreshSchema = Joi.object({
-  refreshToken: Joi.string().required(),
+  refreshToken: Joi.string().optional(), // también aceptado desde cookie (req.cookies.refreshToken)
 });
 
 const changePasswordSchema = Joi.object({

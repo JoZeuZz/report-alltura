@@ -1,5 +1,16 @@
 const AuthService = require('../services/auth.service');
+const { TOKEN_CONFIG } = require('../middleware/auth');
 const { logger } = require('../lib/logger');
+
+const setRefreshCookie = (res, refreshToken) => {
+  res.cookie('refreshToken', refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    path: '/api/auth',
+    maxAge: TOKEN_CONFIG.REFRESH_TOKEN_EXPIRY_SECONDS * 1000,
+  });
+};
 
 /**
  * AuthController
@@ -48,9 +59,11 @@ class AuthController {
       const ip = req.ip || req.connection.remoteAddress;
       const userAgent = req.get('user-agent') || 'Unknown';
 
-      const result = await AuthService.loginUser(email, password, ip, userAgent);
+      const { accessToken, refreshToken, user } = await AuthService.loginUser(email, password, ip, userAgent);
 
-      return res.status(200).json(result);
+      setRefreshCookie(res, refreshToken);
+
+      return res.status(200).json({ accessToken, user });
     } catch (error) {
       logger.error('Error en login:', error);
       next(error);
@@ -68,6 +81,8 @@ class AuthController {
 
       await AuthService.logoutUser(userId, accessToken);
 
+      res.clearCookie('refreshToken', { path: '/api/auth' });
+
       return res.status(200).json({
         message: 'Logged out successfully',
       });
@@ -83,11 +98,14 @@ class AuthController {
    */
   static async refresh(req, res, next) {
     try {
-      const { refreshToken } = req.body;
+      // TODO: retirar fallback a body tras un ciclo de deploy (sesiones pre-cookie)
+      const refreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
 
-      const result = await AuthService.refreshAccessToken(refreshToken);
+      const { accessToken, refreshToken: newRefreshToken } = await AuthService.refreshAccessToken(refreshToken);
 
-      return res.status(200).json(result);
+      setRefreshCookie(res, newRefreshToken);
+
+      return res.status(200).json({ accessToken });
     } catch (error) {
       logger.error('Error en refresh token:', error);
       next(error);

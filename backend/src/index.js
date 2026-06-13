@@ -2,6 +2,7 @@
 require('dotenv').config();
 
 const express = require('express');
+const cookieParser = require('cookie-parser');
 const compression = require('compression');
 const path = require('path');
 const { requestLogger, logger } = require('./lib/logger');
@@ -92,8 +93,9 @@ app.use(requestId);
 // 7. Compresión de respuestas
 app.use(compression());
 
-// 8. Parseo de body (DESPUÉS de headers de seguridad)
-app.use(express.json({ 
+// 8. Parseo de body y cookies (DESPUÉS de headers de seguridad)
+app.use(cookieParser());
+app.use(express.json({
   limit: '10mb',
   strict: true, // Solo aceptar arrays y objects
   type: 'application/json',
