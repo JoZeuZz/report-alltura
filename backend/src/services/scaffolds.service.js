@@ -355,11 +355,9 @@ class ScaffoldService {
         .map((p) => p.id)
         .filter((id, index, self) => self.indexOf(id) === index);
 
-      const allScaffolds = [];
-      for (const projectId of projectIds) {
-        const projectScaffolds = await Scaffold.getByProject(projectId);
-        allScaffolds.push(...projectScaffolds);
-      }
+      const allScaffolds = projectIds.length
+        ? await Scaffold.getByProjects(projectIds)
+        : [];
       return await this._resolveScaffoldsImages(allScaffolds);
     }
 
@@ -405,23 +403,25 @@ class ScaffoldService {
    */
   static async getScaffoldsByProject(projectId) {
     const scaffolds = await Scaffold.getByProject(projectId);
-    
-    // Enriquecer cada andamio con metros cúbicos adicionales
-    const enrichedScaffolds = await Promise.all(
-      scaffolds.map(async (scaffold) => {
-        const additionalCubicMeters = await ScaffoldModification.getTotalApprovedCubicMeters(scaffold.id);
-        const baseCubicMeters = parseFloat(scaffold.cubic_meters);
-        const totalCubicMeters = baseCubicMeters + additionalCubicMeters;
-        const sections = await ScaffoldSection.getByScaffold(scaffold.id);
 
-        return {
-          ...scaffold,
-          additional_cubic_meters: additionalCubicMeters,
-          total_cubic_meters: totalCubicMeters,
-          sections,
-        };
-      })
-    );
+    if (scaffolds.length === 0) return [];
+
+    const ids = scaffolds.map((s) => s.id);
+    const [modsTotals, sectionsByScaffold] = await Promise.all([
+      ScaffoldModification.getTotalApprovedCubicMetersBulk(ids),
+      ScaffoldSection.getByScaffolds(ids),
+    ]);
+
+    const enrichedScaffolds = scaffolds.map((scaffold) => {
+      const additionalCubicMeters = modsTotals.get(scaffold.id) ?? 0;
+      const baseCubicMeters = parseFloat(scaffold.cubic_meters);
+      return {
+        ...scaffold,
+        additional_cubic_meters: additionalCubicMeters,
+        total_cubic_meters: baseCubicMeters + additionalCubicMeters,
+        sections: sectionsByScaffold.get(scaffold.id) ?? [],
+      };
+    });
 
     return await this._resolveScaffoldsImages(enrichedScaffolds);
   }

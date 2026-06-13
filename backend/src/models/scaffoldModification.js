@@ -223,6 +223,27 @@ class ScaffoldModification {
     }
   }
 
+  static async getTotalApprovedCubicMetersBulk(scaffoldIds) {
+    if (!scaffoldIds || scaffoldIds.length === 0) return new Map();
+    try {
+      const result = await db.query(
+        `SELECT scaffold_id, COALESCE(SUM(cubic_meters), 0) as total
+         FROM scaffold_modifications
+         WHERE scaffold_id = ANY($1::int[]) AND approval_status = 'approved'
+         GROUP BY scaffold_id`,
+        [scaffoldIds]
+      );
+      const map = new Map();
+      for (const row of result.rows) {
+        map.set(row.scaffold_id, parseFloat(row.total));
+      }
+      return map;
+    } catch (error) {
+      logger.error('Error calculating bulk approved cubic meters:', error);
+      throw error;
+    }
+  }
+
   /**
    * Obtener estadísticas de modificaciones de un proyecto
    */

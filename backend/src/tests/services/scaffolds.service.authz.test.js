@@ -184,22 +184,22 @@ describe('ScaffoldService - autorización y máquina de estados', () => {
       expect(Scaffold.getByCreator).toHaveBeenCalledWith(7);
     });
 
-    it('client con 2 proyectos distintos llama Scaffold.getByProject con cada id', async () => {
+    it('client con 2 proyectos distintos llama Scaffold.getByProjects con ambos ids', async () => {
       Project.getByAssignedClient.mockResolvedValue([{ id: 1 }]);
       Project.getForUser.mockResolvedValue([{ id: 2 }]);
-      Scaffold.getByProject.mockResolvedValue([]);
+      Scaffold.getByProjects.mockResolvedValue([]);
       await ScaffoldService.getScaffoldsByRole({ id: 10, role: 'client' });
-      expect(Scaffold.getByProject).toHaveBeenCalledWith(1);
-      expect(Scaffold.getByProject).toHaveBeenCalledWith(2);
+      expect(Scaffold.getByProjects).toHaveBeenCalledWith([1, 2]);
+      expect(Scaffold.getByProjects).toHaveBeenCalledTimes(1);
     });
 
-    it('client con proyectos duplicados entre fuentes llama getByProject solo una vez por id', async () => {
+    it('client con proyectos duplicados entre fuentes deduplica y llama getByProjects una vez', async () => {
       Project.getByAssignedClient.mockResolvedValue([{ id: 1 }]);
       Project.getForUser.mockResolvedValue([{ id: 1 }]);
-      Scaffold.getByProject.mockResolvedValue([]);
+      Scaffold.getByProjects.mockResolvedValue([]);
       await ScaffoldService.getScaffoldsByRole({ id: 11, role: 'client' });
-      expect(Scaffold.getByProject).toHaveBeenCalledTimes(1);
-      expect(Scaffold.getByProject).toHaveBeenCalledWith(1);
+      expect(Scaffold.getByProjects).toHaveBeenCalledTimes(1);
+      expect(Scaffold.getByProjects).toHaveBeenCalledWith([1]);
     });
 
     it('rol desconocido rechaza con statusCode 403', async () => {

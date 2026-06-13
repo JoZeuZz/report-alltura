@@ -2,6 +2,7 @@ const ScaffoldService = require('../../services/scaffolds.service');
 const Scaffold = require('../../models/scaffold');
 const ScaffoldSection = require('../../models/scaffoldSection');
 const ScaffoldHistory = require('../../models/scaffoldHistory');
+const ScaffoldModification = require('../../models/scaffoldModification');
 const Project = require('../../models/project');
 const db = require('../../db');
 const { uploadFile, deleteFileByUrl, resolveImageUrl } = require('../../lib/googleCloud');
@@ -9,6 +10,7 @@ const { uploadFile, deleteFileByUrl, resolveImageUrl } = require('../../lib/goog
 jest.mock('../../models/scaffold');
 jest.mock('../../models/scaffoldSection');
 jest.mock('../../models/scaffoldHistory');
+jest.mock('../../models/scaffoldModification');
 jest.mock('../../models/project');
 jest.mock('../../db', () => ({
   query: jest.fn(),
@@ -273,6 +275,46 @@ describe('ScaffoldService', () => {
       );
       expect(ScaffoldHistory.create).toHaveBeenCalled();
       expect(result).toMatchObject({ id: 1, assembly_status: 'disassembled' });
+    });
+  });
+
+  describe('getScaffoldsByProject', () => {
+    it('2 andamios: enriquece con totals y sections del bulk, 0 para ids ausentes', async () => {
+      Scaffold.getByProject.mockResolvedValue([
+        { id: 10, cubic_meters: '5.0' },
+        { id: 20, cubic_meters: '3.0' },
+      ]);
+      ScaffoldModification.getTotalApprovedCubicMetersBulk.mockResolvedValue(
+        new Map([[10, 2.5]])
+      );
+      ScaffoldSection.getByScaffolds.mockResolvedValue(
+        new Map([[20, [{ id: 1, section_order: 1 }]]])
+      );
+
+      const result = await ScaffoldService.getScaffoldsByProject(99);
+
+      expect(ScaffoldModification.getTotalApprovedCubicMetersBulk).toHaveBeenCalledWith([10, 20]);
+      expect(ScaffoldSection.getByScaffolds).toHaveBeenCalledWith([10, 20]);
+
+      const s10 = result.find((s) => s.id === 10);
+      expect(s10.additional_cubic_meters).toBe(2.5);
+      expect(s10.total_cubic_meters).toBeCloseTo(7.5);
+      expect(s10.sections).toEqual([]);
+
+      const s20 = result.find((s) => s.id === 20);
+      expect(s20.additional_cubic_meters).toBe(0);
+      expect(s20.total_cubic_meters).toBeCloseTo(3.0);
+      expect(s20.sections).toEqual([{ id: 1, section_order: 1 }]);
+    });
+
+    it('0 andamios → retorna [] y no llama los bulk', async () => {
+      Scaffold.getByProject.mockResolvedValue([]);
+
+      const result = await ScaffoldService.getScaffoldsByProject(99);
+
+      expect(result).toEqual([]);
+      expect(ScaffoldModification.getTotalApprovedCubicMetersBulk).not.toHaveBeenCalled();
+      expect(ScaffoldSection.getByScaffolds).not.toHaveBeenCalled();
     });
   });
 });

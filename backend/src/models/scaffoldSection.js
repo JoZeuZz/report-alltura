@@ -12,6 +12,23 @@ const ScaffoldSection = {
     return rows;
   },
 
+  async getByScaffolds(scaffoldIds) {
+    if (!scaffoldIds || scaffoldIds.length === 0) return new Map();
+    const { rows } = await db.query(
+      `SELECT id, scaffold_id, section_order, width, length, height, cubic_meters, created_at
+       FROM scaffold_sections
+       WHERE scaffold_id = ANY($1::int[])
+       ORDER BY scaffold_id, section_order ASC`,
+      [scaffoldIds]
+    );
+    const map = new Map();
+    for (const row of rows) {
+      if (!map.has(row.scaffold_id)) map.set(row.scaffold_id, []);
+      map.get(row.scaffold_id).push(row);
+    }
+    return map;
+  },
+
   async replaceForScaffold(scaffoldId, sections, dbClient = db) {
     await dbClient.query('DELETE FROM scaffold_sections WHERE scaffold_id = $1', [scaffoldId]);
 
