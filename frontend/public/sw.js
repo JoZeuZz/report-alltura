@@ -1,45 +1,36 @@
-const CACHE_NAME = 'alltura-reports-v1';
-const OFFLINE_CACHE = 'offline-v1';
+const CACHE_NAME = 'alltura-reports-v2'; // bump: invalida cachés v1 podridas
 const RUNTIME_CACHE = 'runtime-v1';
 
+// Solo assets que Vite garantiza estables (sin hash). Los bundles /assets/* se
+// cachean en runtime por cacheFirstStrategy cuando el navegador los solicita.
 const STATIC_ASSETS = [
   '/',
-  '/static/js/bundle.js',
-  '/static/css/main.css',
   '/manifest.json',
   '/logo192.png',
-  '/offline.html'
+  '/offline.html',
 ];
 
-const API_CACHE_PATTERNS = [
-  /\/api\/projects/,
-  /\/api\/scaffolds/,
-  /\/api\/users\/me/
-];
-
-// Instalación: cachear recursos estáticos
+// Instalación: cachear recursos estáticos con tolerancia a fallos individuales
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    Promise.all([
-      caches.open(CACHE_NAME).then(cache => cache.addAll(STATIC_ASSETS)),
-      caches.open(OFFLINE_CACHE).then(cache => {
-        return cache.add('/offline.html');
-      })
-    ])
+    caches.open(CACHE_NAME).then((cache) =>
+      Promise.allSettled(STATIC_ASSETS.map((url) => cache.add(url)))
+    )
   );
   self.skipWaiting();
 });
 
-// Activación: limpiar cachés antiguos
+// Activación: limpiar cachés que no estén en la lista blanca (incluye v1)
 self.addEventListener('activate', (event) => {
+  const VALID_CACHES = new Set([CACHE_NAME, RUNTIME_CACHE]);
   event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
+    caches.keys().then((cacheNames) =>
+      Promise.all(
         cacheNames
-          .filter(name => name !== CACHE_NAME && name !== OFFLINE_CACHE && name !== RUNTIME_CACHE)
-          .map(name => caches.delete(name))
-      );
-    })
+          .filter((name) => !VALID_CACHES.has(name))
+          .map((name) => caches.delete(name))
+      )
+    )
   );
   self.clients.claim();
 });
@@ -47,72 +38,53 @@ self.addEventListener('activate', (event) => {
 // Estrategia de fetch
 self.addEventListener('fetch', (event) => {
   const { request } = event;
-  
-  // Manejar APIs con estrategia Network First
+
   if (isApiRequest(request)) {
     event.respondWith(networkFirstStrategy(request));
-  }
-  // Manejar assets estáticos con Cache First
-  else if (isStaticAsset(request)) {
+  } else if (isStaticAsset(request)) {
     event.respondWith(cacheFirstStrategy(request));
-  }
-  // Navegación con Network First + Offline Fallback
-  else if (request.mode === 'navigate') {
+  } else if (request.mode === 'navigate') {
     event.respondWith(navigationStrategy(request));
   }
 });
 
-// Estrategia Network First para APIs
+// Network First para APIs (GET → cachea; otros métodos → solo network)
 async function networkFirstStrategy(request) {
   const cache = await caches.open(RUNTIME_CACHE);
-  
-  try { 
+
+  try {
     const response = await fetch(request);
-    
-    // Solo cachear respuestas exitosas de GET
     if (response.status === 200 && request.method === 'GET') {
       cache.put(request, response.clone());
     }
-    
     return response;
-  } catch (error) {
-    // Solo intentar devolver del caché para GET
+  } catch (_error) {
     if (request.method === 'GET') {
       const cached = await cache.match(request);
       if (cached) return cached;
     }
-    
-    // Para POST requests sin caché, guardar en IndexedDB para retry
-    if (request.method === 'POST') {
-      await saveFailedRequest(request);
-    }
-    
-    throw error;
+    throw _error;
   }
 }
 
-// Estrategia Cache First para assets estáticos
+// Cache First para assets estáticos (scripts, estilos, imágenes)
 async function cacheFirstStrategy(request) {
   const cached = await caches.match(request);
-  
-  if (cached) {
-    return cached;
-  }
-  
+  if (cached) return cached;
+
   const response = await fetch(request);
   const cache = await caches.open(CACHE_NAME);
   cache.put(request, response.clone());
-  
   return response;
 }
 
-// Estrategia para navegación
+// Navegación: network first, fallback a offline.html cacheado
 async function navigationStrategy(request) {
   try {
     return await fetch(request);
-  } catch (error) {
-    const cache = await caches.open(OFFLINE_CACHE);
-    return cache.match('/offline.html');
+  } catch (_error) {
+    const offline = await caches.match('/offline.html');
+    return offline || new Response('Sin conexión', { status: 503 });
   }
 }
 
@@ -122,54 +94,9 @@ function isApiRequest(request) {
 }
 
 function isStaticAsset(request) {
-  return request.destination === 'script' || 
-         request.destination === 'style' || 
-         request.destination === 'image';
-}
-
-// Guardar requests fallidos para retry posterior
-async function saveFailedRequest(request) {
-  const body = await request.text();
-  const failedRequest = {
-    url: request.url,
-    method: request.method,
-    headers: Object.fromEntries(request.headers.entries()),
-    body: body,
-    timestamp: Date.now()
-  };
-  
-  // Usar IndexedDB para persistir requests fallidos
-  const db = await openDB();
-  const transaction = db.transaction(['failed_requests'], 'readwrite');
-  transaction.objectStore('failed_requests').add(failedRequest);
-}
-
-// Background Sync para reintentos
-self.addEventListener('sync', (event) => {
-  if (event.tag === 'retry-failed-requests') {
-    event.waitUntil(retryFailedRequests());
-  }
-});
-
-async function retryFailedRequests() {
-  const db = await openDB();
-  const transaction = db.transaction(['failed_requests'], 'readwrite');
-  const store = transaction.objectStore('failed_requests');
-  const requests = await store.getAll();
-  
-  for (const failedRequest of requests) {
-    try {
-      const response = await fetch(failedRequest.url, {
-        method: failedRequest.method,
-        headers: failedRequest.headers,
-        body: failedRequest.body
-      });
-      
-      if (response.ok) {
-        await store.delete(failedRequest.id);
-      }
-    } catch (error) {
-      console.log('Retry failed for:', failedRequest.url);
-    }
-  }
+  return (
+    request.destination === 'script' ||
+    request.destination === 'style' ||
+    request.destination === 'image'
+  );
 }
