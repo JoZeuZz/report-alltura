@@ -4,7 +4,6 @@ module.exports = {
   collectCoverageFrom: [
     'src/**/*.js',
     '!src/index.js', // Excluir entry point
-    '!src/db/setup.js', // Excluir scripts de setup
     '!src/scripts/**', // Excluir scripts CLI
     '!src/tests/**', // Excluir tests
   ],

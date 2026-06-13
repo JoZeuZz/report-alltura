@@ -17,7 +17,7 @@
 const readline = require('readline');
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
-const bcrypt = require('bcryptjs');
+const bcrypt = require('bcrypt');
 const { Pool } = require('pg');
 const { validatePasswordStrength, PASSWORD_CONFIG } = require('../middleware/passwordPolicy');
 const { getPoolConfig } = require('../db/poolConfig');
