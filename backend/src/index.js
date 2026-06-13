@@ -105,8 +105,6 @@ app.use(express.urlencoded({
 }));
 
 // 9. Sanitización de inputs (DESPUÉS de parsear body)
-// NoSQL injection protection está integrada en sanitizeStrict
-// app.use(sanitizeMongoOnly); // ⚠️ Deshabilitado: incompatible con Express 5.x
 
 // Proxy de imágenes debe ir ANTES de sanitización para no romper JWT token en query
 app.use('/api/image-proxy', imageProxyRoutes);

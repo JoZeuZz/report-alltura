@@ -19,7 +19,6 @@
  */
 
 const createDOMPurify = require('isomorphic-dompurify');
-const mongoSanitize = require('express-mongo-sanitize');
 const validator = require('validator');
 const { logger } = require('../lib/logger');
 
@@ -202,22 +201,6 @@ const sanitizeInput = (options = {}) => {
     }
   };
 };
-
-/**
- * Middleware de sanitización ligera (solo NoSQL injection)
- * Útil para endpoints que no procesan entrada del usuario directamente
- */
-const sanitizeMongoOnly = mongoSanitize({
-  replaceWith: '_', // Reemplazar $ y . con _
-  onSanitize: ({ req, key }) => {
-    logger.warn('NoSQL injection attempt detected', {
-      key,
-      path: req.path,
-      ip: req.ip,
-      userAgent: req.get('user-agent'),
-    });
-  },
-});
 
 /**
  * Middleware para sanitización de HTML rico
@@ -662,7 +645,6 @@ module.exports = {
   sanitizeInput,
   sanitizeStrict,
   sanitizeRichHTML,
-  sanitizeMongoOnly,
   validateIDParam,
   
   // Funciones de sanitización individuales
