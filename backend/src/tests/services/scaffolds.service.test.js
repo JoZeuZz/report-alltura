@@ -4,7 +4,7 @@ const ScaffoldSection = require('../../models/scaffoldSection');
 const ScaffoldHistory = require('../../models/scaffoldHistory');
 const Project = require('../../models/project');
 const db = require('../../db');
-const { uploadFile, resolveImageUrl } = require('../../lib/googleCloud');
+const { uploadFile, deleteFileByUrl, resolveImageUrl } = require('../../lib/googleCloud');
 
 jest.mock('../../models/scaffold');
 jest.mock('../../models/scaffoldSection');
@@ -134,6 +134,91 @@ describe('ScaffoldService', () => {
       expect(ScaffoldSection.replaceForScaffold).toHaveBeenCalled();
       expect(ScaffoldHistory.create).toHaveBeenCalled();
       expect(result).toMatchObject({ id: 10 });
+    });
+  });
+
+  describe('disassembleScaffold', () => {
+    const user = { id: 1, role: 'admin' };
+    const scaffoldId = 42;
+    const baseScaffold = {
+      id: scaffoldId,
+      project_id: 10,
+      assembly_status: 'assembled',
+      card_status: 'green',
+      scaffold_number: 'A-001',
+      area: 'Zona Sur',
+      tag: 'TAG-X',
+    };
+    const activeProject = { id: 10, name: 'Proyecto Test', active: true, client_active: true, assigned_supervisor_id: 99 };
+    const disassembledRow = { id: scaffoldId, assembly_status: 'disassembled', card_status: null };
+
+    it('happy path: retorna andamio desarmado y no llama deleteFileByUrl', async () => {
+      Scaffold.getById.mockResolvedValue(baseScaffold);
+      Project.getById.mockResolvedValue(activeProject);
+      uploadFile.mockResolvedValue('gs://img');
+      db.query.mockResolvedValue({ rows: [disassembledRow] });
+      ScaffoldHistory.create.mockResolvedValue({});
+
+      const result = await ScaffoldService.disassembleScaffold(scaffoldId, user, Buffer.from('img'), 'notas');
+
+      expect(uploadFile).toHaveBeenCalledTimes(1);
+      expect(deleteFileByUrl).not.toHaveBeenCalled();
+      expect(ScaffoldHistory.create).toHaveBeenCalledTimes(1);
+      expect(result).toMatchObject({ id: scaffoldId, assembly_status: 'disassembled' });
+    });
+
+    it('UPDATE devuelve rows vacíos → rechaza 404 y llama deleteFileByUrl', async () => {
+      Scaffold.getById.mockResolvedValue(baseScaffold);
+      Project.getById.mockResolvedValue(activeProject);
+      uploadFile.mockResolvedValue('gs://img');
+      db.query.mockResolvedValue({ rows: [] });
+      deleteFileByUrl.mockResolvedValue();
+
+      await expect(
+        ScaffoldService.disassembleScaffold(scaffoldId, user, Buffer.from('img'), null)
+      ).rejects.toMatchObject({ statusCode: 404 });
+
+      expect(deleteFileByUrl).toHaveBeenCalledWith('gs://img');
+    });
+
+    it('db.query rechaza → error se propaga y llama deleteFileByUrl', async () => {
+      Scaffold.getById.mockResolvedValue(baseScaffold);
+      Project.getById.mockResolvedValue(activeProject);
+      uploadFile.mockResolvedValue('gs://img');
+      db.query.mockRejectedValue(new Error('DB error'));
+      deleteFileByUrl.mockResolvedValue();
+
+      await expect(
+        ScaffoldService.disassembleScaffold(scaffoldId, user, Buffer.from('img'), null)
+      ).rejects.toThrow('DB error');
+
+      expect(deleteFileByUrl).toHaveBeenCalledWith('gs://img');
+    });
+
+    it('ScaffoldHistory.create rechaza → error se propaga y llama deleteFileByUrl', async () => {
+      Scaffold.getById.mockResolvedValue(baseScaffold);
+      Project.getById.mockResolvedValue(activeProject);
+      uploadFile.mockResolvedValue('gs://img');
+      db.query.mockResolvedValue({ rows: [disassembledRow] });
+      ScaffoldHistory.create.mockRejectedValue(new Error('historial error'));
+      deleteFileByUrl.mockResolvedValue();
+
+      await expect(
+        ScaffoldService.disassembleScaffold(scaffoldId, user, Buffer.from('img'), null)
+      ).rejects.toThrow('historial error');
+
+      expect(deleteFileByUrl).toHaveBeenCalledWith('gs://img');
+    });
+
+    it('sin imageFile → rechaza 400 y no llama uploadFile', async () => {
+      Scaffold.getById.mockResolvedValue(baseScaffold);
+      Project.getById.mockResolvedValue(activeProject);
+
+      await expect(
+        ScaffoldService.disassembleScaffold(scaffoldId, user, null, null)
+      ).rejects.toMatchObject({ statusCode: 400 });
+
+      expect(uploadFile).not.toHaveBeenCalled();
     });
   });
 
