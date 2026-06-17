@@ -4,7 +4,7 @@ import AppLayout from '@/shell/layout/AppLayout';
 import LoginPage from '../pages/LoginPage';
 import ErrorPage from '@/shell/components/ErrorPage';
 import type { User } from '../types/api';
-import { refreshAccessToken, clearStoredTokens } from '@/shell/services/authRefresh';
+import { refreshAccessToken, clearStoredTokens, getStoredAccessToken } from '@/shell/services/authRefresh';
 import { requestRouterApi } from './routerApi';
 
 // Admin Pages (lazy loaded)
@@ -40,7 +40,13 @@ const fetchAPI = requestRouterApi;
 async function getUserFromToken(): Promise<
   Pick<User, 'id' | 'email' | 'role' | 'first_name' | 'last_name'> | null
 > {
-  let token = localStorage.getItem('accessToken');
+  // El access token vive en memoria (no en localStorage). Si no está disponible
+  // (p.ej. tras recargar la página), intentar un refresh silencioso vía cookie HttpOnly.
+  let token = getStoredAccessToken();
+
+  if (!token) {
+    token = await refreshAccessToken();
+  }
 
   if (!token) {
     return null;

@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { Project } from '../../types/api';
 import UploadProgress, { UploadStage } from '@/shell/components/UploadProgress';
 import { uploadWithProgress } from '@/shell/services/apiService';
+import { getStoredAccessToken } from '@/shell/services/authRefresh';
 import {
   processImageFile,
   formatBytes,
@@ -197,7 +198,7 @@ const CreateScaffoldPage: React.FC = () => {
     if (image) {
       formData.set('assembly_image', image);
     }
-    const token = localStorage.getItem('accessToken');
+    const token = getStoredAccessToken();
     if (!token) {
       toast.error('Sesión expirada. Vuelve a iniciar sesión.');
       navigate('/login');

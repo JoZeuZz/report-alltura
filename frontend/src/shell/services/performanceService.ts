@@ -1,3 +1,5 @@
+import { getStoredAccessToken } from './authRefresh';
+
 interface PerformanceMetric {
   name: string;
   value: number;
@@ -125,7 +127,7 @@ class PerformanceService {
 
       // Excepción técnica: envío best-effort de telemetría fuera de apiService
       // para evitar side effects de auth/redirect en métricas no críticas.
-      const accessToken = localStorage.getItem('accessToken');
+      const accessToken = getStoredAccessToken();
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
       };

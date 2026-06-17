@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/shell/context/AuthContext';
+import { getStoredAccessToken } from '@/shell/services/authRefresh';
 import logoWhite from '../assets/logo-alltura-white.png';
 
 const loginSchema = z.object({
@@ -38,7 +39,7 @@ const LoginPage: React.FC = () => {
       if (success) {
         toast.success('¡Bienvenido!');
         
-        const token = localStorage.getItem('accessToken');
+        const token = getStoredAccessToken();
         if (token) {
           try {
             const payload = JSON.parse(atob(token.split('.')[1]));
